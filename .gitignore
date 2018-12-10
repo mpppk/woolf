@@ -1,0 +1,11 @@
+.idea/
+*.map
+node_modules/
+dist/
+src/**/*.js
+__tests__/**/*.js
+__tests__/**/*.d.ts
+src/**/*.d.ts
+.nyc_output/
+docs/
+coverage/
