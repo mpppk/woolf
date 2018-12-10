@@ -2,7 +2,7 @@ import { CreateFunctionRequest, Types } from 'aws-sdk/clients/lambda';
 import { IInvokeParams } from 'lamool/src/lambda';
 import { ILambda } from './ILambda';
 
-export class PLamool {
+export class PLambda {
   constructor(private lamool: ILambda) { }
 
   public async createFunction(params: CreateFunctionRequest): Promise<Types.FunctionConfiguration> {
@@ -20,7 +20,16 @@ export class PLamool {
           if (err) { reject(err); return; }
           if (!data) { reject(new Error('data is empty')); return; }
           if (!data.Payload) { reject(new Error('payload is empty')); return; }
-          resolve(data.Payload);
+          try {
+            if (typeof data.Payload !== 'string') {
+              resolve('PLambda only support string type payload currently');
+              return;
+            }
+            const payload = JSON.parse(data.Payload);
+            resolve(payload);
+          } catch (e) {
+            reject(new Error('failed to parse payload to json'));
+          }
         })
       }
     );

@@ -1,32 +1,42 @@
-import { Lamool } from 'lamool';
-import { LambdaFunction } from 'lamool/src/lambda';
 import { CreateFunctionRequest, FunctionConfiguration } from 'aws-sdk/clients/lambda';
-import { PLamool } from './lambda/PLamool';
-import { Pipeline } from './Pipeline';
+import { LambdaFunction } from 'lamool/src/lambda';
+import { funcToZip } from 'lamool/src/util';
+import { reduce } from 'p-iteration';
+import { ILambda } from './lambda/ILambda';
+import { PLambda } from './lambda/PLambda';
+import { Data } from './models';
 
 export class Job {
-  private dependJobs: Job[] = [];
-  private plamool: PLamool;
+  private plambda: PLambda;
   private funcNames: string[] = [];
-  constructor(lamool: Lamool, private pipeline: Pipeline) {
-    this.plamool = new PLamool(lamool);
+
+  constructor(lambda: ILambda, private defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {}) {
+    this.plambda = new PLambda(lambda);
   }
 
-  public async addFunc(params: CreateFunctionRequest): Promise<FunctionConfiguration | null> {
-    this.funcNames.push(params.FunctionName);
+  public async addFunc<T>(functionName: string, func: LambdaFunction<T>, params: Partial<CreateFunctionRequest> = {}): Promise<FunctionConfiguration | null> {
+
+    const combinedParams = {
+      ...this.defaultCreateFunctionRequest,
+      ...params,
+      Code: {ZipFile: funcToZip(func)},
+      FunctionName: functionName,
+    };
+
+    this.funcNames.push(functionName);
     try {
-      return await this.plamool.createFunction(params);
-    } catch (e) { return null; } // tslint:disable-line
+      return await this.plambda.createFunction(combinedParams as CreateFunctionRequest); // FIXME
+    } catch (e) {
+      return null; // FIXME
+    } // tslint:disable-line
   }
 
-  public dependTo(job: Job) {
-    this.dependJobs.push(job);
-  }
-
-  public run(): any {
-    this.dependJobs.forEach((dependJob) => {
-      dependJob.
-    });
-    this.lamool.invoke()
+  public run(data: Data): Promise<Data> {
+    return reduce(this.funcNames, async (accData, funcName) => {
+      return await this.plambda.invoke({
+        FunctionName: funcName,
+        Payload: JSON.stringify(accData),
+      });
+    }, data);
   }
 }
