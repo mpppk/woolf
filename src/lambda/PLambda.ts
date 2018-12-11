@@ -20,16 +20,24 @@ export class PLambda {
           if (err) { reject(err); return; }
           if (!data) { reject(new Error('data is empty')); return; }
           if (!data.Payload) { reject(new Error('payload is empty')); return; }
+
+          if (typeof data.Payload !== 'string') {
+            reject('PLambda only support string type payload currently');
+            return;
+          }
+
+          let payload;
           try {
-            if (typeof data.Payload !== 'string') {
-              resolve('PLambda only support string type payload currently');
-              return;
-            }
-            const payload = JSON.parse(data.Payload);
-            resolve(payload);
+            payload = JSON.parse(data.Payload);
           } catch (e) {
             reject(new Error('failed to parse payload to json'));
           }
+
+          if (data.FunctionError === 'Handled') {
+            reject(new Error(`error type:${payload.errorType} message:${payload.error}`));
+          }
+
+          resolve(payload);
         })
       }
     );

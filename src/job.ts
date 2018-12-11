@@ -33,10 +33,13 @@ export class Job {
 
   public run(data: Data): Promise<Data> {
     return reduce(this.funcNames, async (accData, funcName) => {
-      return await this.plambda.invoke({
-        FunctionName: funcName,
-        Payload: JSON.stringify(accData),
-      });
-    }, data);
+      try {
+        return await this.plambda.invoke({
+          FunctionName: funcName,
+          Payload: JSON.stringify(accData),
+        });
+      } catch (e) {
+        throw new Error(`failed to execute function: accData: ${JSON.stringify(accData)}, funcName: ${funcName},  ${e.message}`);
+      } }, data);
   }
 }
