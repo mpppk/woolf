@@ -14,7 +14,7 @@ export class Job {
     this.plambda = new PLambda(lambda);
   }
 
-  public async addFunc<T>(functionName: string, func: LambdaFunction<T>, params: Partial<CreateFunctionRequest> = {}): Promise<FunctionConfiguration | null> {
+  public async addFunc<T, U = T>(functionName: string, func: LambdaFunction<T, U>, params: Partial<CreateFunctionRequest> = {}): Promise<FunctionConfiguration | null> {
 
     const combinedParams = {
       ...this.defaultCreateFunctionRequest,
@@ -31,8 +31,8 @@ export class Job {
     } // tslint:disable-line
   }
 
-  public run(data: Data): Promise<Data> {
-    return reduce(this.funcNames, async (accData, funcName) => {
+  public async run(data: Data): Promise<Data> {
+    return await reduce(this.funcNames, async (accData, funcName) => {
       try {
         return await this.plambda.invoke({
           FunctionName: funcName,
