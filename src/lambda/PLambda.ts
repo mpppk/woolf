@@ -1,12 +1,13 @@
 import { CreateFunctionRequest, Types } from 'aws-sdk/clients/lambda';
 import { IInvokeParams } from 'lamool/src/lambda';
+import { Data } from '../models';
 import { ILambda } from './ILambda';
 
 export class PLambda {
   constructor(private lamool: ILambda) { }
 
   public async createFunction(params: CreateFunctionRequest): Promise<Types.FunctionConfiguration> {
-    return new Promise((resolve, reject) => {
+     return await new Promise((resolve, reject) => {
       this.lamool.createFunction(params, (err, data) => {
         if (err) { reject(err); }
         resolve(data as Types.FunctionConfiguration); // FIXME
@@ -15,31 +16,34 @@ export class PLambda {
   };
 
   public async invoke(invokeParams: IInvokeParams) {
-    return new Promise((resolve, reject) => {
-        this.lamool.invoke(invokeParams, (err, data) => {
-          if (err) { reject(err); return; }
-          if (!data) { reject(new Error('data is empty')); return; }
-          if (!data.Payload) { reject(new Error('payload is empty')); return; }
+    const result: Data = await new Promise((resolve, reject) => {
+      this.lamool.invoke(invokeParams, (err, data) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(data || {});
+      });
+    });
 
-          if (typeof data.Payload !== 'string') {
-            reject('PLambda only support string type payload currently');
-            return;
-          }
+    if (!result) { throw new Error('data is empty') }
+    if (!result.Payload) { throw new Error('payload is empty') }
 
-          let payload;
-          try {
-            payload = JSON.parse(data.Payload);
-          } catch (e) {
-            reject(new Error('failed to parse payload to json'));
-          }
+    if (typeof result.Payload !== 'string') {
+      throw new Error('PLambda only support string type payload currently');
+    }
 
-          if (data.FunctionError === 'Handled') {
-            reject(new Error(`error type:${payload.errorType} message:${payload.error}`));
-          }
+    let payload;
+    try {
+      payload = JSON.parse(result.Payload);
+    } catch (e) {
+      throw new Error('failed to parse payload to json: ' + e);
+    }
 
-          resolve(payload);
-        })
-      }
-    );
+    if (result.FunctionError === 'Handled') {
+      throw new Error(`error type:${payload.errorType} message:${payload.error}`);
+    }
+
+    return payload;
   }
 }
