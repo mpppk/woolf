@@ -21,5 +21,5 @@ it('execute functions', async () => {
 it('throw exception if function is failed', async () => {
   const job = woolf.newJob();
   await job.addFunc('add1', (_e, _c, cb) => {cb(new Error('error'), null)}); // FIXME
-  await expect(job.run({})).rejects.toThrow('failed to execute function: accData: {}, funcName: add1,  error type:Error message:undefined'); // FIXME message undefined
+  await expect(job.run({})).rejects.toThrow('failed to execute function: currentData: {}, funcName: add1,  error type:Error message:undefined'); // FIXME message undefined
 });

@@ -39,7 +39,7 @@ export class Job {
           Payload: JSON.stringify(accData),
         });
       } catch (e) {
-        throw new Error(`failed to execute function: accData: ${JSON.stringify(accData)}, funcName: ${funcName},  ${e.message}`);
+        throw new Error(`failed to execute function: currentData: ${JSON.stringify(accData)}, funcName: ${funcName},  ${e.message}`);
       } }, data);
   }
 }
