@@ -1,7 +1,7 @@
 {
   "name": "woolf",
   "version": "0.0.1",
-  "description": "",
+  "description": "Universal workflow engine on lamool",
   "main": "src/index.js",
   "scripts": {
     "build": "tsc",
@@ -19,27 +19,6 @@
     "src/woolf.js"
   ],
   "types": "src/index.d.ts",
-  "jest": {
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js"
-    ],
-    "transform": {
-      "^.+\\.(ts|tsx)$": "ts-jest"
-    },
-    "globals": {
-      "ts-jest": {
-        "tsConfigFile": "tsconfig.json"
-      }
-    },
-    "testMatch": [
-      "**/__tests__/*.+(ts|tsx)"
-    ],
-    "coverageDirectory": "./coverage/",
-    "collectCoverage": false,
-    "testEnvironment": "node"
-  },
   "keywords": [],
   "author": "mpppk",
   "license": "MIT",
@@ -61,7 +40,7 @@
   },
   "dependencies": {
     "aws-sdk": "latest",
-    "lamool": "file:../lamool",
+    "lamool": "0.0.1",
     "p-iteration": "^1.1.7"
   }
 }
