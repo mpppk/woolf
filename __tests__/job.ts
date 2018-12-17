@@ -28,6 +28,6 @@ describe('local lambda', () => {
   it('throw exception if function is failed', async () => {
     const job = woolf.newJob();
     await job.addFunc('fail', (_e, _c, cb) => {cb(new Error('error'), null)}); // FIXME
-    await expect(job.run({})).rejects.toThrow('failed to execute function: currentData: {}, funcName: fail,  error type:Error message:undefined'); // FIXME message undefined
+    await expect(job.run({})).rejects.toThrow('failed to execute function: currentData: {}, funcName: fail,  Handled error type:Error message:error'); // FIXME message undefined
   });
 });

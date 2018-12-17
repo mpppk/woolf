@@ -4,13 +4,13 @@ import { funcToZip } from 'lamool/src/util';
 import { reduce } from 'p-iteration';
 import { ILambda } from './lambda/ILambda';
 import { PLambda } from './lambda/PLambda';
-import { Data } from './models';
+import { IWoolfResult } from './models';
 
 export class Job {
   private plambda: PLambda;
   private funcNames: string[] = [];
 
-  constructor(lambda: ILambda, private defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {}) {
+  constructor(public id: number, lambda: ILambda, private defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {}) {
     this.plambda = new PLambda(lambda);
   }
 
@@ -31,7 +31,7 @@ export class Job {
     } // tslint:disable-line
   }
 
-  public async run(data: Data): Promise<Data> {
+  public async run(data: IWoolfResult): Promise<IWoolfResult> {
     return await reduce(this.funcNames, async (accData, funcName) => {
       try {
         return await this.plambda.invoke({

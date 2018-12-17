@@ -1,6 +1,6 @@
 import { CreateFunctionRequest, Types } from 'aws-sdk/clients/lambda';
 import { IInvokeParams } from 'lamool/src/lambda';
-import { Data } from '../models';
+import { IWoolfResult } from '../models';
 import { ILambda } from './ILambda';
 
 export class PLambda {
@@ -16,7 +16,7 @@ export class PLambda {
   };
 
   public async invoke(invokeParams: IInvokeParams) {
-    const result: Data = await new Promise((resolve, reject) => {
+    const result: IWoolfResult = await new Promise((resolve, reject) => {
       this.lamool.invoke(invokeParams, (err, data) => {
         if (err) {
           reject(err);
@@ -40,8 +40,8 @@ export class PLambda {
       throw new Error('failed to parse payload to json: ' + e);
     }
 
-    if (result.FunctionError === 'Handled') {
-      throw new Error(`error type:${payload.errorType} message:${payload.error}`);
+    if (result.FunctionError) {
+      throw new Error(`${result.FunctionError} error type:${payload.errorType} message:${payload.errorMessage}`);
     }
 
     return payload;
