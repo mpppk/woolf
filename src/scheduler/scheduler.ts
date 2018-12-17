@@ -1,6 +1,6 @@
 import { CreateFunctionRequest } from 'aws-sdk/clients/lambda';
 import * as _ from 'lodash';
-import { Job } from '../job';
+import { IJobOption, Job } from '../job';
 import { ILambda } from '../lambda/ILambda';
 import { IWoolfResult } from '../models';
 import { DAG } from './dag';
@@ -13,8 +13,9 @@ export class Scheduler {
     this.graph.addNode(job);
   }
 
-  public newJob(lambda: ILambda, defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {}) {
-    const job = new Job(this.graph.getNewID(), lambda, defaultCreateFunctionRequest);
+  public newJob(lambda: ILambda, defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {},
+                jobOpt: Partial<IJobOption> = {}) {
+    const job = new Job(this.graph.getNewID(), lambda, defaultCreateFunctionRequest, jobOpt);
     this.addJob(job);
     return job;
   }

@@ -6,15 +6,24 @@ import { ILambda } from './lambda/ILambda';
 import { PLambda } from './lambda/PLambda';
 import { IWoolfResult } from './models';
 
+export interface IJobOption {
+  name: string;
+}
+
 export class Job {
+  private name: string;
   private plambda: PLambda;
   private funcNames: string[] = [];
 
-  constructor(public id: number, lambda: ILambda, private defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {}) {
+  constructor(public id: number, lambda: ILambda,
+              private defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {},
+              jobOption: Partial<IJobOption> = {}) {
     this.plambda = new PLambda(lambda);
+    this.name = jobOption.name ? jobOption.name : 'job' + id;
   }
 
-  public async addFunc<T, U = T>(functionName: string, func: LambdaFunction<T, U>, params: Partial<CreateFunctionRequest> = {}): Promise<FunctionConfiguration | null> {
+  public async addFunc<T, U = T>(func: LambdaFunction<T, U>, params: Partial<CreateFunctionRequest> = {}): Promise<FunctionConfiguration | null> {
+    const functionName = this.name + '-' + (params.FunctionName ? params.FunctionName : 'function' + this.funcNames.length);
 
     const combinedParams = {
       ...this.defaultCreateFunctionRequest,
