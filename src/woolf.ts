@@ -1,7 +1,7 @@
 import { CreateFunctionRequest } from 'aws-sdk/clients/lambda';
 import * as _ from 'lodash';
 import { map } from 'p-iteration';
-import { Job } from './job';
+import { IJobOption, Job } from './job';
 import { ILambda } from './lambda/ILambda';
 import { IWoolfPayload, IWoolfResult } from './models';
 import { Scheduler } from './scheduler/scheduler';
@@ -14,8 +14,8 @@ export class Woolf {
   private scheduler = new Scheduler();
   constructor(private lambda: ILambda, private defaultCreateFunctionRequest: Partial<CreateFunctionRequest>) {}
 
-  public newJob(): Job {
-    return this.scheduler.newJob(this.lambda, this.defaultCreateFunctionRequest);
+  public newJob(jobOpt: Partial<IJobOption> = {}): Job {
+    return this.scheduler.newJob(this.lambda, this.defaultCreateFunctionRequest, jobOpt);
   }
 
   public addDependency(from: Job, to: Job) {

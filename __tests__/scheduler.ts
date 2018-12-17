@@ -21,7 +21,6 @@ const generateAsyncSleepFunc: (time: number) => LambdaFunction<SleepPayload, ISl
     })
   }, ${time});`;
   return Function('event', 'context', 'cb', funcStr) as LambdaFunction<SleepPayload, ISleepResult>;
-  // return (event, _, cb) => { setTimeout(() => { cb(null, {data: event.data + time}); }, time); };
 };
 
 describe('woolf workflow', () => {
@@ -34,9 +33,9 @@ describe('woolf workflow', () => {
 
   it('execute workflow', async () => {
     const job0 = woolf.newJob();
-    await job0.addFunc<SleepPayload, ISleepResult>('s1000', generateAsyncSleepFunc(1000)); // FIXME
+    await job0.addFunc<SleepPayload, ISleepResult>(generateAsyncSleepFunc(1000)); // FIXME
     const job1 = woolf.newJob();
-    await job1.addFunc<SleepPayload, ISleepResult>('s2000', generateAsyncSleepFunc(2000)); // FIXME
+    await job1.addFunc<SleepPayload, ISleepResult>(generateAsyncSleepFunc(2000)); // FIXME
     woolf.addDependency(job0, job1);
     const result = await woolf.run({data: [{sleepTime: 0}]}) as ISleepResult[];
     expect(result).toHaveLength(1);
