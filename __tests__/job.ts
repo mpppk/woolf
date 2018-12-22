@@ -8,9 +8,9 @@ const defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {
   Runtime: 'nodejs8.10',
 };
 
-describe('local lambda', () => {
+describe('woolf job', () => {
   const lamool = new Lamool();
-  const woolf = new Woolf(lamool, defaultCreateFunctionRequest);
+  const woolf = new Woolf(lamool, {name: 'woolf', defaultCreateFunctionRequest});
 
   afterAll(async () => {
     await lamool.terminate(true);

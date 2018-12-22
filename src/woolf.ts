@@ -1,21 +1,44 @@
 import { CreateFunctionRequest } from 'aws-sdk/clients/lambda';
 import * as _ from 'lodash';
 import { map } from 'p-iteration';
+import { IWoolfEventHandlers } from './eventHandlers';
+import { EventManager } from './eventManager';
 import { IJobOption, Job } from './job';
 import { ILambda } from './lambda/ILambda';
 import { IWoolfPayload, IWoolfResult } from './models';
 import { Scheduler } from './scheduler/scheduler';
+
+export interface IWoolfOption {
+  name: string;
+  defaultCreateFunctionRequest: Partial<CreateFunctionRequest>;
+  eventHandlers: IWoolfEventHandlers;
+}
+const defaultWoolfOption = {
+  defaultCreateFunctionRequest: {},
+  name: 'no name',
+};
 
 export class Woolf {
   private static dataListToWoolfPayload(dataList: IWoolfResult[]): IWoolfPayload {
     return {data: dataList};
   }
 
+  private eventManager: EventManager;
   private scheduler = new Scheduler();
-  constructor(private lambda: ILambda, private defaultCreateFunctionRequest: Partial<CreateFunctionRequest>) {}
+  private readonly name: string;
+  constructor(private lambda: ILambda, private opt: Partial<IWoolfOption> = defaultWoolfOption) {
+    this.eventManager = new EventManager(opt.eventHandlers);
+    this.name = this.opt.name || 'no name';
+  }
+
+  public updateEventHandlers(eventHandlers: Partial<IWoolfEventHandlers>) {
+    this.eventManager.updateEventHandlers(eventHandlers);
+  }
 
   public newJob(jobOpt: Partial<IJobOption> = {}): Job {
-    return this.scheduler.newJob(this.lambda, this.defaultCreateFunctionRequest, jobOpt);
+    const job = this.scheduler.newJob(this.lambda, this.opt.defaultCreateFunctionRequest, jobOpt);
+    this.eventManager.triggerAddNewJob(this.name, job.name);
+    return job;
   }
 
   public addDependency(from: Job, to: Job) {

@@ -11,7 +11,7 @@ export interface IJobOption {
 }
 
 export class Job {
-  private name: string;
+  public name: string;
   private plambda: PLambda;
   private funcNames: string[] = [];
 

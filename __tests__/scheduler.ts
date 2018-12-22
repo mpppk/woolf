@@ -31,7 +31,7 @@ describe('woolf workflow', () => {
   let woolf: Woolf;
 
   beforeEach(() => {
-    woolf = new Woolf(lamool, defaultCreateFunctionRequest);
+    woolf = new Woolf(lamool, {defaultCreateFunctionRequest});
   });
 
   afterAll(async () => {
