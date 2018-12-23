@@ -13,9 +13,11 @@ export interface IWoolfOption {
   defaultCreateFunctionRequest: Partial<CreateFunctionRequest>;
   eventHandlers: IWoolfEventHandlers;
 }
-const defaultWoolfOption = {
-  defaultCreateFunctionRequest: {},
-  name: 'no name',
+
+const defaultCreateFunctionRequest: Pick<CreateFunctionRequest, 'Handler' | 'Role' | 'Runtime'> = {
+  Handler: 'index.handler',
+  Role: '-',
+  Runtime: 'nodejs8.10',
 };
 
 export class Woolf {
@@ -26,9 +28,14 @@ export class Woolf {
   private eventManager: EventManager;
   private scheduler = new Scheduler();
   private readonly name: string;
-  constructor(private lambda: ILambda, private opt: Partial<IWoolfOption> = defaultWoolfOption) {
+  private readonly defaultCreateFunctionRequest: Partial<CreateFunctionRequest>;
+  constructor(private lambda: ILambda, opt: Partial<IWoolfOption> = {}) {
     this.eventManager = new EventManager(opt.eventHandlers);
-    this.name = this.opt.name || 'no name';
+    this.name = opt.name || 'no name';
+    this.defaultCreateFunctionRequest = {
+      ...defaultCreateFunctionRequest,
+      ...opt.defaultCreateFunctionRequest,
+    };
   }
 
   public updateEventHandlers(eventHandlers: Partial<IWoolfEventHandlers>) {
@@ -36,8 +43,8 @@ export class Woolf {
   }
 
   public newJob(jobOpt: Partial<IJobOption> = {}): Job {
-    const job = this.scheduler.newJob(this.lambda, this.opt.defaultCreateFunctionRequest, jobOpt);
-    this.eventManager.triggerAddNewJob(this.name, job.name);
+    const job = this.scheduler.newJob(this.lambda, this.defaultCreateFunctionRequest, jobOpt);
+    this.eventManager.dispatchAddNewJobEvent(this.name, job.name);
     return job;
   }
 
@@ -47,8 +54,11 @@ export class Woolf {
 
   public async run(initialPayload: IWoolfPayload): Promise<IWoolfResult[]> {
     const initialJobs = this.scheduler.getReadiedJobs().map((jd) => jd[0]);
+    initialJobs.forEach((job) => this.eventManager.dispatchStartJobEvent(this.name, job.name));
+
     const runJob = async (job: Job, data: IWoolfPayload): Promise<IWoolfResult[]> => {
       const result = await job.run(data);
+      this.eventManager.dispatchFinishJobEvent(this.name, job.name);
       const nextJobAndDataList = this.scheduler.doneJob(job, result);
       if (this.scheduler.isLastJob(job)) {
         return [result];

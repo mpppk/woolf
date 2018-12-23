@@ -17,7 +17,7 @@ const emptyWoolfEventHandlers: IWoolfEventHandlers = {
 type WoolfEventName = keyof IWoolfEventHandlers;
 
 export class EventManager {
-  private static getAddNewJobContext(workflowName: string, jobName: string): IWoolfJobEventContext {
+  private static getJobContext(workflowName: string, jobName: string): IWoolfJobEventContext {
     return {workflowName, jobName};
   }
   constructor(private eventHandlers: IWoolfEventHandlers = emptyWoolfEventHandlers) {}
@@ -34,7 +34,15 @@ export class EventManager {
     eventHandler.forEach((cb) => cb(eventName, context));
   }
 
-  public triggerAddNewJob(workflowName: string, jobName: string){
-    this.dispatchEvent('addNewJob', EventManager.getAddNewJobContext(workflowName, jobName));
+  public dispatchAddNewJobEvent(workflowName: string, jobName: string){
+    this.dispatchEvent('addNewJob', EventManager.getJobContext(workflowName, jobName));
+  }
+
+  public dispatchStartJobEvent(workflowName: string, jobName: string){
+    this.dispatchEvent('startJob', EventManager.getJobContext(workflowName, jobName));
+  }
+
+  public dispatchFinishJobEvent(workflowName: string, jobName: string) {
+    this.dispatchEvent('finishJob', EventManager.getJobContext(workflowName, jobName));
   }
 }

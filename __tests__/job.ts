@@ -28,6 +28,6 @@ describe('woolf job', () => {
   it('throw exception if function is failed', async () => {
     const job = woolf.newJob({name: 'failJob'});
     await job.addFunc((_e, _c, cb) => {cb(new Error('error'), null)}); // FIXME
-    await expect(job.run({})).rejects.toThrow('failed to execute function: currentData: {}, funcName: failJob-function0,  Handled error type:Error message:error'); // FIXME message undefined
+    await expect(job.run({})).rejects.toThrow('failed to execute function: currentData: {}, funcName: failJob-function0,  registered functions: failJob-function0, Handled error type:Error message:error'); // FIXME message undefined
   });
 });
