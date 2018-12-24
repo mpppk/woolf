@@ -11,7 +11,7 @@ export interface IJobOption {
 }
 
 export class Job {
-  private name: string;
+  public name: string;
   private plambda: PLambda;
   private funcNames: string[] = [];
 
@@ -37,7 +37,7 @@ export class Job {
       return await this.plambda.createFunction(combinedParams as CreateFunctionRequest); // FIXME
     } catch (e) {
       return null; // FIXME
-    } // tslint:disable-line
+    }
   }
 
   public async run(data: IWoolfResult): Promise<IWoolfResult> {
@@ -48,7 +48,7 @@ export class Job {
           Payload: JSON.stringify(accData),
         });
       } catch (e) {
-        throw new Error(`failed to execute function: currentData: ${JSON.stringify(accData)}, funcName: ${funcName},  ${e.message}`);
+        throw new Error(`failed to execute function: currentData: ${JSON.stringify(accData)}, funcName: ${funcName},  registered functions: ${this.funcNames}, ${e.message}`);
       } }, data);
   }
 }
