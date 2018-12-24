@@ -73,29 +73,43 @@ describe('woolf', () => {
     expect(addNewJobCVCalledCount).toBe(2);
   });
 
-  it('handle startJob and finishJob event', async () => {
+  it('handle start and finish events', async () => {
     const jobName = 'test-job';
-    let startJobEventIsCalled = false;
-    let finishJobEventIsCalled = false;
+    let startJobEventCBIsCalled = false;
+    let finishJobEventCBIsCalled = false;
+    let startEventCBIsCalled = false;
+    let finishEventCBIsCalled = false;
     const eventHandlers: Partial<IWoolfEventHandlers> = {
+      finish: [(eventType, context) => {
+        expect(eventType).toBe('finish');
+        expect(context.workflowName).toBe(workflowName);
+        finishEventCBIsCalled = true;
+      }],
       finishJob: [(eventType, context) => {
         expect(eventType).toBe('finishJob');
         expect(context.jobName).toBe(jobName);
         expect(context.workflowName).toBe(workflowName);
-        startJobEventIsCalled = true;
+        startJobEventCBIsCalled = true;
+      }],
+      start: [(eventType, context) => {
+        expect(eventType).toBe('start');
+        expect(context.workflowName).toBe(workflowName);
+        startEventCBIsCalled = true;
       }],
       startJob: [(eventType, context) => {
         expect(eventType).toBe('startJob');
         expect(context.jobName).toBe(jobName);
         expect(context.workflowName).toBe(workflowName);
-        finishJobEventIsCalled = true;
+        finishJobEventCBIsCalled = true;
       }],
     };
     woolf.updateEventHandlers(eventHandlers);
     const job = woolf.newJob({name: jobName});
     await job.addFunc<{count: number}>((event, _, cb) => {cb(null, {count: event.count+1})}); // FIXME
     await woolf.run({data: [{count: 0}]});
-    expect(startJobEventIsCalled).toBeTruthy();
-    expect(finishJobEventIsCalled).toBeTruthy();
+    expect(startEventCBIsCalled).toBeTruthy();
+    expect(finishEventCBIsCalled).toBeTruthy();
+    expect(startJobEventCBIsCalled).toBeTruthy();
+    expect(finishJobEventCBIsCalled).toBeTruthy();
   });
 });

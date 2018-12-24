@@ -1,6 +1,6 @@
 import {
   IWoolfEventHandlers,
-  IWoolfJobEventContext,
+  IWoolfJobEventContext, IWoolfWFEventContext,
   WoolfEventContext,
   WoolfEventHandler
 } from './eventHandlers';
@@ -17,6 +17,9 @@ const emptyWoolfEventHandlers: IWoolfEventHandlers = {
 type WoolfEventName = keyof IWoolfEventHandlers;
 
 export class EventManager {
+  private static getWFContext(workflowName: string): IWoolfWFEventContext {
+    return {workflowName};
+  }
   private static getJobContext(workflowName: string, jobName: string): IWoolfJobEventContext {
     return {workflowName, jobName};
   }
@@ -44,5 +47,13 @@ export class EventManager {
 
   public dispatchFinishJobEvent(workflowName: string, jobName: string) {
     this.dispatchEvent('finishJob', EventManager.getJobContext(workflowName, jobName));
+  }
+
+  public dispatchStartEvent(workflowName: string) {
+    this.dispatchEvent('start', EventManager.getWFContext(workflowName));
+  }
+
+  public dispatchFinishEvent(workflowName: string) {
+    this.dispatchEvent('finish', EventManager.getWFContext(workflowName));
   }
 }

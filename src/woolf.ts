@@ -53,6 +53,7 @@ export class Woolf {
   }
 
   public async run(initialPayload: IWoolfPayload): Promise<IWoolfResult[]> {
+    this.eventManager.dispatchStartEvent(this.name);
     const initialJobs = this.scheduler.getReadiedJobs().map((jd) => jd[0]);
     initialJobs.forEach((job) => this.eventManager.dispatchStartJobEvent(this.name, job.name));
 
@@ -75,6 +76,8 @@ export class Woolf {
 
       return _.flatten(results);
     };
-    return _.flatten(await map(initialJobs, async (job) => await runJob(job, initialPayload)));
+    const r = _.flatten(await map(initialJobs, async (job) => await runJob(job, initialPayload)));
+    this.eventManager.dispatchFinishEvent(this.name);
+    return r;
   }
 }
