@@ -32,6 +32,47 @@ describe('woolf', () => {
     expect(addNewJobEventIsCalled).toBeTruthy();
   });
 
+  it('handle multiple handlers for addNewJob', async () => {
+    let addNewJobCBIsCalled = false;
+    let anotherAddNewJobCBIsCalled = false;
+    const jobName = 'test-job';
+    const eventHandlers: Partial<IWoolfEventHandlers> = {
+      addNewJob: [(eventType, context) => {
+        expect(eventType).toBe('addNewJob');
+        expect(context.jobName).toBe(jobName);
+        expect(context.workflowName).toBe(workflowName);
+        addNewJobCBIsCalled = true;
+      },
+      (eventType, context) => {
+        expect(eventType).toBe('addNewJob');
+        expect(context.jobName).toBe(jobName);
+        expect(context.workflowName).toBe(workflowName);
+        anotherAddNewJobCBIsCalled = true;
+      }],
+    };
+    woolf.updateEventHandlers(eventHandlers);
+    woolf.newJob({name: jobName});
+    expect(addNewJobCBIsCalled).toBe(true);
+    expect(anotherAddNewJobCBIsCalled).toBe(true);
+  });
+
+  it('handle addNewJob events corresponding to multiple jobs', async () => {
+    let addNewJobCVCalledCount = 0;
+    const jobName = 'test-job';
+    const eventHandlers: Partial<IWoolfEventHandlers> = {
+      addNewJob: [(eventType, context) => {
+        expect(eventType).toBe('addNewJob');
+        expect(context.jobName).toBe(jobName);
+        expect(context.workflowName).toBe(workflowName);
+        addNewJobCVCalledCount++;
+      }],
+    };
+    woolf.updateEventHandlers(eventHandlers);
+    woolf.newJob({name: jobName});
+    woolf.newJob({name: jobName});
+    expect(addNewJobCVCalledCount).toBe(2);
+  });
+
   it('handle startJob and finishJob event', async () => {
     const jobName = 'test-job';
     let startJobEventIsCalled = false;
