@@ -1,9 +1,19 @@
+import { IWoolfPayload, IWoolfResult } from './models';
+
 export interface IWoolfWFEventContext {
   workflowName: string;
+  payload: IWoolfPayload;
+  result: IWoolfResult;
 }
 
-export interface IWoolfJobEventContext extends IWoolfWFEventContext{
+export interface IWoolfBaseJobEventContext {
+  workflowName: string;
   jobName: string;
+}
+
+export interface IWoolfJobEventContext extends IWoolfBaseJobEventContext{
+  payload: IWoolfPayload;
+  result: IWoolfResult;
 }
 
 export type WoolfEventContext = IWoolfWFEventContext & IWoolfJobEventContext;

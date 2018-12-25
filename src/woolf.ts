@@ -44,7 +44,7 @@ export class Woolf {
 
   public newJob(jobOpt: Partial<IJobOption> = {}): Job {
     const job = this.scheduler.newJob(this.lambda, this.defaultCreateFunctionRequest, jobOpt);
-    this.eventManager.dispatchAddNewJobEvent(this.name, job.name);
+    this.eventManager.dispatchAddNewJobEvent(EventManager.getBaseJobContext(this.name, job.name));
     return job;
   }
 
@@ -53,13 +53,15 @@ export class Woolf {
   }
 
   public async run(initialPayload: IWoolfPayload): Promise<IWoolfResult[]> {
-    this.eventManager.dispatchStartEvent(this.name);
+    const wfContext = EventManager.getWFContext(this.name, initialPayload);
+    this.eventManager.dispatchStartEvent(wfContext);
     const initialJobs = this.scheduler.getReadiedJobs().map((jd) => jd[0]);
-    initialJobs.forEach((job) => this.eventManager.dispatchStartJobEvent(this.name, job.name));
 
-    const runJob = async (job: Job, data: IWoolfPayload): Promise<IWoolfResult[]> => {
-      const result = await job.run(data);
-      this.eventManager.dispatchFinishJobEvent(this.name, job.name);
+    const runJob = async (job: Job, payload: IWoolfPayload): Promise<IWoolfResult[]> => {
+      const jobContext = EventManager.getJobContext(this.name, job.name, payload);
+      this.eventManager.dispatchStartJobEvent(jobContext);
+      const result = await job.run(payload);
+      this.eventManager.dispatchFinishJobEvent({...jobContext, result});
       const nextJobAndDataList = this.scheduler.doneJob(job, result);
       if (this.scheduler.isLastJob(job)) {
         return [result];
@@ -77,7 +79,7 @@ export class Woolf {
       return _.flatten(results);
     };
     const r = _.flatten(await map(initialJobs, async (job) => await runJob(job, initialPayload)));
-    this.eventManager.dispatchFinishEvent(this.name);
+    this.eventManager.dispatchFinishEvent({...wfContext, result: r});
     return r;
   }
 }

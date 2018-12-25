@@ -75,6 +75,8 @@ describe('woolf', () => {
 
   it('handle start and finish events', async () => {
     const jobName = 'test-job';
+    const initialPayload = {data: [{count: 0}]};
+    const expectedResult = {count: 1};
     let startJobEventCBIsCalled = false;
     let finishJobEventCBIsCalled = false;
     let startEventCBIsCalled = false;
@@ -83,30 +85,38 @@ describe('woolf', () => {
       finish: [(eventType, context) => {
         expect(eventType).toBe('finish');
         expect(context.workflowName).toBe(workflowName);
+        expect(context.payload).toEqual(initialPayload);
+        expect(context.result).toEqual([expectedResult]);
         finishEventCBIsCalled = true;
       }],
       finishJob: [(eventType, context) => {
         expect(eventType).toBe('finishJob');
         expect(context.jobName).toBe(jobName);
         expect(context.workflowName).toBe(workflowName);
+        expect(context.payload).toEqual(initialPayload);
+        expect(context.result).toEqual(expectedResult);
         startJobEventCBIsCalled = true;
       }],
       start: [(eventType, context) => {
         expect(eventType).toBe('start');
         expect(context.workflowName).toBe(workflowName);
+        expect(context.payload).toEqual(initialPayload);
+        expect(context.result).toEqual({});
         startEventCBIsCalled = true;
       }],
       startJob: [(eventType, context) => {
         expect(eventType).toBe('startJob');
         expect(context.jobName).toBe(jobName);
         expect(context.workflowName).toBe(workflowName);
+        expect(context.payload).toEqual(initialPayload);
+        expect(context.result).toEqual({});
         finishJobEventCBIsCalled = true;
       }],
     };
     woolf.updateEventHandlers(eventHandlers);
     const job = woolf.newJob({name: jobName});
-    await job.addFunc<{count: number}>((event, _, cb) => {cb(null, {count: event.count+1})}); // FIXME
-    await woolf.run({data: [{count: 0}]});
+    await job.addFunc<any>((event, _, cb) => {cb(null, {count: event.data[0].count+1})}); // FIXME
+    await woolf.run(initialPayload);
     expect(startEventCBIsCalled).toBeTruthy();
     expect(finishEventCBIsCalled).toBeTruthy();
     expect(startJobEventCBIsCalled).toBeTruthy();
