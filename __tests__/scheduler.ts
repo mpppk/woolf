@@ -1,6 +1,7 @@
 import { CreateFunctionRequest } from 'aws-sdk/clients/lambda';
 import { Lamool } from 'lamool';
 import { LambdaFunction } from 'lamool/src/lambda';
+import {forEach} from 'p-iteration';
 import { IWoolfPayload } from '../src/models';
 import { Woolf } from '../src/woolf';
 
@@ -10,27 +11,32 @@ const defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {
   Runtime: 'nodejs8.10'
 };
 
-type SleepPayload = IWoolfPayload<{ sleepTime: number }>;
+
+interface ISleepPayload {
+  sleepTime: number
+}
 
 interface ISleepResult {
   sleepTime: number;
 }
 
-const generateAsyncSleepFunc: (time: number) => LambdaFunction<SleepPayload, ISleepResult> = (time: number) => {
+const generateAsyncSleepFunc: (time: number) => LambdaFunction<IWoolfPayload<ISleepPayload>, ISleepResult> = (time: number) => {
   const funcStr = `
   setTimeout(() => {
     cb(null, {
       sleepTime: event.data.reduce((a, b) => a+b.sleepTime, 0) + ${time}
     })
   }, ${time});`;
-  return Function('event', 'context', 'cb', funcStr) as LambdaFunction<SleepPayload, ISleepResult>;
+  return Function('event', 'context', 'cb', funcStr) as LambdaFunction<IWoolfPayload<ISleepPayload>, ISleepResult>;
 };
 
 describe('woolf workflow', () => {
-  const lamool = new Lamool();
+  let lamool = new Lamool();
   let woolf: Woolf;
 
   beforeEach(() => {
+    lamool.terminate(true);
+    lamool = new Lamool();
     woolf = new Woolf(lamool, {defaultCreateFunctionRequest});
   });
 
@@ -40,9 +46,9 @@ describe('woolf workflow', () => {
 
   it('execute serial jobs', async () => {
     const job0 = woolf.newJob();
-    await job0.addFunc<SleepPayload, ISleepResult>(generateAsyncSleepFunc(10)); // FIXME
+    await job0.addFunc<ISleepPayload, ISleepResult>(generateAsyncSleepFunc(10)); // FIXME
     const job1 = woolf.newJob();
-    await job1.addFunc<SleepPayload, ISleepResult>(generateAsyncSleepFunc(20)); // FIXME
+    await job1.addFunc<ISleepPayload, ISleepResult>(generateAsyncSleepFunc(20)); // FIXME
     woolf.addDependency(job0, job1);
     const result = (await woolf.run({ data: [{ sleepTime: 0 }] })) as ISleepResult[];
     expect(result).toHaveLength(1);
@@ -51,9 +57,9 @@ describe('woolf workflow', () => {
 
   it('execute parallel jobs', async () => {
     const job0 = woolf.newJob();
-    await job0.addFunc<SleepPayload, ISleepResult>(generateAsyncSleepFunc(10)); // FIXME
+    await job0.addFunc<ISleepPayload, ISleepResult>(generateAsyncSleepFunc(10)); // FIXME
     const job1 = woolf.newJob();
-    await job1.addFunc<SleepPayload, ISleepResult>(generateAsyncSleepFunc(20)); // FIXME
+    await job1.addFunc<ISleepPayload, ISleepResult>(generateAsyncSleepFunc(20)); // FIXME
     const result = (await woolf.run({ data: [{ sleepTime: 0 }] })) as ISleepResult[];
     expect(result).toHaveLength(2);
     expect(result[0].sleepTime).toBe(10);
@@ -63,9 +69,8 @@ describe('woolf workflow', () => {
   it('execute complexity workflow', async () => {
     // https://medium.com/@pavloosadchyi/parallel-running-dag-of-tasks-in-pythons-celery-4ea73c88c915
     const jobs = Array.from({ length: 14 }, (_, k) => k).map(_ => woolf.newJob());
-    jobs.forEach(job => job.addFunc<SleepPayload, ISleepResult>(generateAsyncSleepFunc(1)));
-
-    //
+    jobs.forEach(job => job.addFunc<ISleepPayload, ISleepResult>(generateAsyncSleepFunc(1)));
+    await forEach(jobs, async (job) => await job.addFunc<ISleepPayload, ISleepResult>(generateAsyncSleepFunc(1)));
     //   1 - 3     6 - 9 -
     //  /     \  /        \
     // 0       5 - 7 - 10 - 12 - 13
