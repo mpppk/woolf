@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "aws-sdk": "latest",
-    "lamool": "0.0.1",
+    "lamool": "0.0.2",
     "lodash": "^4.17.11",
     "p-iteration": "^1.1.7"
   }
