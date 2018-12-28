@@ -142,4 +142,39 @@ describe('woolf', () => {
     await job.addFunc(() => {}, {FunctionName: funcName}); // tslint:disable-line
     expect(addFuncEventIsCalled).toBeTruthy();
   });
+
+  it('handle start/finish func events', async () => {
+    let startFuncEventIsCalled = false;
+    let finishFuncEventIsCalled = false;
+    const jobName = 'test-job';
+    const funcName = 'test-func';
+    const initialPayload = Woolf.dataListToWoolfPayload([{count: 0}]);
+    const expectedResults = {count: 1};
+    const eventHandlers: Partial<IWoolfEventHandlers> = {
+      finishFunc: [(eventType, context) => {
+        expect(eventType).toBe('finishFunc');
+        expect(context.jobName).toBe(jobName);
+        expect(context.workflowName).toBe(workflowName);
+        expect(context.funcName).toBe(`${jobName}-${funcName}`);
+        expect(context.payload).toEqual(initialPayload);
+        expect(context.result).toEqual(expectedResults);
+        finishFuncEventIsCalled = true;
+      }],
+      startFunc: [(eventType, context) => {
+        expect(eventType).toBe('startFunc');
+        expect(context.jobName).toBe(jobName);
+        expect(context.workflowName).toBe(workflowName);
+        expect(context.funcName).toBe(`${jobName}-${funcName}`);
+        expect(context.payload).toEqual(initialPayload);
+        expect(context.result).toEqual({});
+        startFuncEventIsCalled = true;
+      }],
+    };
+    woolf.updateEventHandlers(eventHandlers);
+    const job = woolf.newJob({name: jobName});
+    await job.addFunc<{count: number}>((e) => {return {count: e.data[0].count+1}}, {FunctionName: funcName}); // tslint:disable-line
+    await woolf.run(initialPayload);
+    expect(finishFuncEventIsCalled).toBeTruthy();
+    expect(startFuncEventIsCalled).toBeTruthy();
+  });
 });

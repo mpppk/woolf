@@ -6,6 +6,7 @@ import { EventManager } from './eventManager';
 import { ILambda } from './lambda/ILambda';
 import { PLambda } from './lambda/PLambda';
 import { IWoolfPayload, IWoolfResult } from './models';
+import { IWoolfFuncEventContext } from './eventHandlers';
 
 export interface IJobOption {
   name: string;
@@ -30,33 +31,48 @@ export class Job {
   }
 
   public async addFunc<T, U = T>(func: LambdaFunction<IWoolfPayload<T>, U>, params: Partial<CreateFunctionRequest> = {}): Promise<FunctionConfiguration | null> {
-    const functionName = this.name + '-' + (params.FunctionName ? params.FunctionName : 'function' + this.funcNames.length);
+    const funcName = this.name + '-' + (params.FunctionName ? params.FunctionName : 'function' + this.funcNames.length);
 
     const combinedParams = {
       ...this.defaultCreateFunctionRequest,
       ...params,
       Code: {ZipFile: funcToZip(func)},
-      FunctionName: functionName,
+      FunctionName: funcName,
     };
 
-    const eventContext = {funcName: functionName, jobName: this.name, workflowName: this.workflowName};
+    const eventContext = {...this.getBaseEventContext(), funcName};
     this.eventManager.dispatchAddFuncEvent(eventContext);
-    this.funcNames.push(functionName);
+    this.funcNames.push(funcName);
     return await this.plambda.createFunction(combinedParams as CreateFunctionRequest); // FIXME
   }
 
   public async run(payload: IWoolfPayload): Promise<IWoolfResult> {
     const resultPayload = await reduce(this.funcNames, async (accData: IWoolfPayload, funcName: string) => {
+      const context = {
+        ...this.getBaseEventContext(),
+        funcName,
+        payload: accData,
+        result: {},
+      };
+      this.eventManager.dispatchStartFuncEvent(context);
       try {
         const result: IWoolfResult = await this.plambda.invoke({
           FunctionName: funcName,
           Payload: JSON.stringify(accData),
         });
+        this.eventManager.dispatchFinishFuncEvent({...context, result});
         return {data: [result]};
       } catch (e) {
         throw new Error(`failed to execute function: currentData: ${JSON.stringify(accData)}, funcName: ${funcName},  registered functions: ${this.funcNames}, ${e.message}`);
       }
     }, payload);
     return resultPayload.data[0];
+  }
+
+  private getBaseEventContext(): Pick<IWoolfFuncEventContext, 'jobName' | 'workflowName'> {
+    return {
+      jobName: this.name,
+      workflowName: this.workflowName,
+    }
   }
 }

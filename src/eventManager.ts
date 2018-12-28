@@ -1,7 +1,7 @@
 import {
   IWoolfAddFuncEventContext,
   IWoolfBaseJobEventContext,
-  IWoolfEventHandlers,
+  IWoolfEventHandlers, IWoolfFuncEventContext,
   IWoolfJobEventContext,
   IWoolfWFEventContext,
   WoolfEventContext,
@@ -80,5 +80,13 @@ export class EventManager {
 
   public dispatchAddFuncEvent(context: IWoolfAddFuncEventContext) {
     this.dispatchEvent('addFunc', context);
+  }
+
+  public dispatchStartFuncEvent(context: IWoolfFuncEventContext) {
+    this.dispatchEvent('startFunc', context);
+  }
+
+  public dispatchFinishFuncEvent(context: IWoolfFuncEventContext) {
+    this.dispatchEvent('finishFunc', context);
   }
 }
