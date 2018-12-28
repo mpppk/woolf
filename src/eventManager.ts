@@ -1,33 +1,47 @@
 import {
+  IWoolfAddFuncEventContext,
   IWoolfBaseJobEventContext,
   IWoolfEventHandlers,
-  IWoolfJobEventContext, IWoolfWFEventContext,
+  IWoolfJobEventContext,
+  IWoolfWFEventContext,
   WoolfEventContext,
   WoolfEventHandler
 } from './eventHandlers';
 import { IWoolfPayload, IWoolfResult } from './models';
 
 const emptyWoolfEventHandlers: IWoolfEventHandlers = {
+  addFunc: [],
   addNewJob: [],
   change: [],
   finish: [],
+  finishFunc: [],
   finishJob: [],
   start: [],
+  startFunc: [],
   startJob: []
 };
 
 type WoolfEventName = keyof IWoolfEventHandlers;
 
 export class EventManager {
-  public static getWFContext(workflowName: string, payload: IWoolfPayload, result?: IWoolfResult): IWoolfWFEventContext {
-    return {workflowName, payload, result: result ? result : {}};
+  public static getWFContext(
+    workflowName: string,
+    payload: IWoolfPayload,
+    result?: IWoolfResult
+  ): IWoolfWFEventContext {
+    return { workflowName, payload, result: result ? result : {} };
   }
   public static getBaseJobContext(workflowName: string, jobName: string): IWoolfBaseJobEventContext {
-    return {workflowName, jobName};
+    return { workflowName, jobName };
   }
-  public static getJobContext(workflowName: string, jobName: string, payload: IWoolfPayload, result?: IWoolfResult): IWoolfJobEventContext {
+  public static getJobContext(
+    workflowName: string,
+    jobName: string,
+    payload: IWoolfPayload,
+    result?: IWoolfResult
+  ): IWoolfJobEventContext {
     const wfContext = EventManager.getWFContext(workflowName, payload, result);
-    return {...wfContext, jobName};
+    return { ...wfContext, jobName };
   }
 
   constructor(private eventHandlers: IWoolfEventHandlers = emptyWoolfEventHandlers) {}
@@ -41,14 +55,14 @@ export class EventManager {
 
   public dispatchEvent(eventName: WoolfEventName, context: any) {
     const eventHandler: Array<WoolfEventHandler<WoolfEventContext>> = this.eventHandlers[eventName]; // FIXME
-    eventHandler.forEach((cb) => cb(eventName, context));
+    eventHandler.forEach(cb => cb(eventName, context));
   }
 
-  public dispatchAddNewJobEvent(context: IWoolfBaseJobEventContext){
+  public dispatchAddNewJobEvent(context: IWoolfBaseJobEventContext) {
     this.dispatchEvent('addNewJob', context);
   }
 
-  public dispatchStartJobEvent(context: IWoolfJobEventContext){
+  public dispatchStartJobEvent(context: IWoolfJobEventContext) {
     this.dispatchEvent('startJob', context);
   }
 
@@ -62,5 +76,9 @@ export class EventManager {
 
   public dispatchFinishEvent(context: IWoolfWFEventContext) {
     this.dispatchEvent('finish', context);
+  }
+
+  public dispatchAddFuncEvent(context: IWoolfAddFuncEventContext) {
+    this.dispatchEvent('addFunc', context);
   }
 }

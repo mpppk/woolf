@@ -123,4 +123,23 @@ describe('woolf', () => {
     expect(startJobEventCBIsCalled).toBeTruthy();
     expect(finishJobEventCBIsCalled).toBeTruthy();
   });
+
+  it('handle add func event', async () => {
+    let addFuncEventIsCalled = false;
+    const jobName = 'test-job';
+    const funcName = 'test-func';
+    const eventHandlers: Partial<IWoolfEventHandlers> = {
+      addFunc: [(eventType, context) => {
+        expect(eventType).toBe('addFunc');
+        expect(context.jobName).toBe(jobName);
+        expect(context.workflowName).toBe(workflowName);
+        expect(context.funcName).toBe(`${jobName}-${funcName}`);
+        addFuncEventIsCalled = true;
+      }],
+    };
+    woolf.updateEventHandlers(eventHandlers);
+    const job = woolf.newJob({name: jobName});
+    await job.addFunc(() => {}, {FunctionName: funcName}); // tslint:disable-line
+    expect(addFuncEventIsCalled).toBeTruthy();
+  });
 });

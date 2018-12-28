@@ -25,7 +25,7 @@ export class Woolf {
     return {data: dataList};
   }
 
-  private eventManager: EventManager;
+  private readonly eventManager: EventManager;
   private scheduler = new Scheduler();
   private readonly name: string;
   private readonly defaultCreateFunctionRequest: Partial<CreateFunctionRequest>;
@@ -43,7 +43,12 @@ export class Woolf {
   }
 
   public newJob(jobOpt: Partial<IJobOption> = {}): Job {
-    const job = this.scheduler.newJob(this.lambda, this.defaultCreateFunctionRequest, jobOpt);
+    const newJobOpt = {
+      eventManager: this.eventManager,
+      workflowName: this.name,
+      ...jobOpt,
+    };
+    const job = this.scheduler.newJob(this.lambda, this.defaultCreateFunctionRequest, newJobOpt);
     this.eventManager.dispatchAddNewJobEvent(EventManager.getBaseJobContext(this.name, job.name));
     return job;
   }
