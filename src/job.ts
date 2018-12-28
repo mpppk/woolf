@@ -4,7 +4,7 @@ import { funcToZip } from 'lamool/src/util';
 import { reduce } from 'p-iteration';
 import { ILambda } from './lambda/ILambda';
 import { PLambda } from './lambda/PLambda';
-import { IWoolfResult } from './models';
+import { IWoolfPayload, IWoolfResult } from './models';
 
 export interface IJobOption {
   name: string;
@@ -22,7 +22,7 @@ export class Job {
     this.name = jobOption.name ? jobOption.name : 'job' + id;
   }
 
-  public async addFunc<T, U = T>(func: LambdaFunction<T, U>, params: Partial<CreateFunctionRequest> = {}): Promise<FunctionConfiguration | null> {
+  public async addFunc<T, U = T>(func: LambdaFunction<IWoolfPayload<T>, U>, params: Partial<CreateFunctionRequest> = {}): Promise<FunctionConfiguration | null> {
     const functionName = this.name + '-' + (params.FunctionName ? params.FunctionName : 'function' + this.funcNames.length);
 
     const combinedParams = {
@@ -33,22 +33,21 @@ export class Job {
     };
 
     this.funcNames.push(functionName);
-    try {
-      return await this.plambda.createFunction(combinedParams as CreateFunctionRequest); // FIXME
-    } catch (e) {
-      return null; // FIXME
-    }
+    return await this.plambda.createFunction(combinedParams as CreateFunctionRequest); // FIXME
   }
 
-  public async run(data: IWoolfResult): Promise<IWoolfResult> {
-    return await reduce(this.funcNames, async (accData, funcName) => {
+  public async run(payload: IWoolfPayload): Promise<IWoolfResult> {
+    const resultPayload = await reduce(this.funcNames, async (accData: IWoolfPayload, funcName: string) => {
       try {
-        return await this.plambda.invoke({
+        const result: IWoolfResult = await this.plambda.invoke({
           FunctionName: funcName,
           Payload: JSON.stringify(accData),
         });
+        return {data: [result]};
       } catch (e) {
         throw new Error(`failed to execute function: currentData: ${JSON.stringify(accData)}, funcName: ${funcName},  registered functions: ${this.funcNames}, ${e.message}`);
-      } }, data);
+      }
+    }, payload);
+    return resultPayload.data[0];
   }
 }

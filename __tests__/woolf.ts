@@ -81,6 +81,7 @@ describe('woolf', () => {
     let finishJobEventCBIsCalled = false;
     let startEventCBIsCalled = false;
     let finishEventCBIsCalled = false;
+
     const eventHandlers: Partial<IWoolfEventHandlers> = {
       finish: [(eventType, context) => {
         expect(eventType).toBe('finish');
@@ -115,7 +116,7 @@ describe('woolf', () => {
     };
     woolf.updateEventHandlers(eventHandlers);
     const job = woolf.newJob({name: jobName});
-    await job.addFunc<any>((event, _, cb) => {cb(null, {count: event.data[0].count+1})}); // FIXME
+    await job.addFunc<{count: number}>((event, _, cb) => {cb(null, {count: event.data[0].count+1})}); // FIXME
     await woolf.run(initialPayload);
     expect(startEventCBIsCalled).toBeTruthy();
     expect(finishEventCBIsCalled).toBeTruthy();

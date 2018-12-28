@@ -21,7 +21,7 @@ const defaultCreateFunctionRequest: Pick<CreateFunctionRequest, 'Handler' | 'Rol
 };
 
 export class Woolf {
-  private static dataListToWoolfPayload(dataList: IWoolfResult[]): IWoolfPayload {
+  public static dataListToWoolfPayload(dataList: IWoolfResult[]): IWoolfPayload {
     return {data: dataList};
   }
 
@@ -52,7 +52,7 @@ export class Woolf {
     this.scheduler.addDependency(from, to);
   }
 
-  public async run(initialPayload: IWoolfPayload): Promise<IWoolfResult[]> {
+  public async run<T>(initialPayload: IWoolfPayload<T>): Promise<IWoolfResult[]> {
     const wfContext = EventManager.getWFContext(this.name, initialPayload);
     this.eventManager.dispatchStartEvent(wfContext);
     const initialJobs = this.scheduler.getReadiedJobs().map((jd) => jd[0]);
