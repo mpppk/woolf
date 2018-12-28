@@ -66,8 +66,12 @@ export class Woolf {
       const jobContext = EventManager.getJobContext(this.name, job.name, payload);
       this.eventManager.dispatchStartJobEvent(jobContext);
       const result = await job.run(payload);
-      this.eventManager.dispatchFinishJobEvent({...jobContext, result});
       const nextJobAndDataList = this.scheduler.doneJob(job, result);
+      this.eventManager.dispatchFinishJobEvent({
+        ...jobContext,
+        nextJobs: nextJobAndDataList.map(t => t[0]),
+        result,
+      });
       if (this.scheduler.isLastJob(job)) {
         return [result];
       }

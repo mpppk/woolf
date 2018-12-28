@@ -2,11 +2,11 @@ import { CreateFunctionRequest, FunctionConfiguration } from 'aws-sdk/clients/la
 import { LambdaFunction } from 'lamool/src/lambda';
 import { funcToZip } from 'lamool/src/util';
 import { reduce } from 'p-iteration';
+import { IWoolfFuncEventContext } from './eventHandlers';
 import { EventManager } from './eventManager';
 import { ILambda } from './lambda/ILambda';
 import { PLambda } from './lambda/PLambda';
 import { IWoolfPayload, IWoolfResult } from './models';
-import { IWoolfFuncEventContext } from './eventHandlers';
 
 export interface IJobOption {
   name: string;

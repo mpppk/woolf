@@ -96,6 +96,7 @@ describe('woolf', () => {
         expect(context.workflowName).toBe(workflowName);
         expect(context.payload).toEqual(initialPayload);
         expect(context.result).toEqual(expectedResult);
+        expect(context.nextJobs).toHaveLength(0);
         startJobEventCBIsCalled = true;
       }],
       start: [(eventType, context) => {
