@@ -1,10 +1,12 @@
 import { CreateFunctionRequest } from 'aws-sdk/clients/lambda';
 import { Lamool } from 'lamool';
 import { LambdaFunction } from 'lamool/src/lambda';
+import {forEach} from 'p-iteration';
 import { Job } from '../src/job';
 import { IWoolfPayload } from '../src/models';
-import { Scheduler } from '../src/scheduler/scheduler';
+import { JobState, Scheduler } from '../src/scheduler/scheduler';
 import { Woolf } from '../src/woolf';
+import { IWoolfEventHandlers } from '../src/eventHandlers';
 
 const defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {
   Handler: 'index.handler',
@@ -156,5 +158,30 @@ describe('scheduler', () => {
     expect(scheduler.isDoneJob(job1)).toBeFalsy();
     expect(scheduler.isReadiedJob(job1)).toBeTruthy();
     expect(scheduler.isSuspendedJob(job1)).toBeFalsy();
+  });
+
+  it('return job stats', async () => {
+    const job0 = new Job(0, lamool, defaultCreateFunctionRequest);
+    await job0.addFunc(countUpLambdaFunction);
+    scheduler.addJob(job0);
+    const job1 = new Job(1, lamool, defaultCreateFunctionRequest);
+    await job1.addFunc(countUpLambdaFunction);
+    scheduler.addJob(job1);
+    scheduler.addDependency(job0, job1);
+
+    const statsSummary1 = scheduler.stats().map(s => ({id: s.job.id, state: s.state}));
+    const expectedStats1 = [
+      {id: 0, state: JobState.Ready},
+      {id: 1, state: JobState.Suspend},
+    ];
+    expect(statsSummary1).toEqual(expect.arrayContaining(expectedStats1))
+
+    scheduler.doneJob(job0, {});
+    const statsSummary2 = scheduler.stats().map(s => ({id: s.job.id, state: s.state}));
+    const expectedStats2 = [
+      {id: 0, state: JobState.Done},
+      {id: 1, state: JobState.Ready},
+    ];
+    expect(statsSummary2).toEqual(expect.arrayContaining(expectedStats2))
   });
 });

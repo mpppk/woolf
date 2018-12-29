@@ -5,6 +5,17 @@ import { ILambda } from '../lambda/ILambda';
 import { IWoolfResult } from '../models';
 import { DAG } from './dag';
 
+export enum JobState {
+  Done = 'DONE',
+  Ready = 'READY',
+  Suspend = 'SUSPEND',
+}
+
+export interface IJobStat {
+  job: Job,
+  state: JobState,
+}
+
 export class Scheduler {
   private graph = new DAG<Job>();
   private doneJobs: Map<number, IWoolfResult> = new Map();
@@ -73,6 +84,23 @@ export class Scheduler {
 
   public isLastJob(job: Job): boolean {
     return this.graph.getToNodes(job).length === 0;
+  }
+
+  public getJobState(job: Job): JobState {
+    if (this.isDoneJob(job)) {
+      return JobState.Done;
+    }
+    if (this.isReadiedJob(job)) {
+      return JobState.Ready;
+    }
+    if (this.isSuspendedJob(job)) {
+      return JobState.Suspend;
+    }
+    throw new Error('unknown state job: ' + job);
+  }
+
+  public stats(): IJobStat[] {
+    return this.graph.getNodes().map((job) => ({job, state: this.getJobState(job)}));
   }
 
   private getDataListForJob(job: Job): IWoolfResult[] {
