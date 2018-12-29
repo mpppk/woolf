@@ -6,7 +6,6 @@ import { Job } from '../src/job';
 import { IWoolfPayload } from '../src/models';
 import { JobState, Scheduler } from '../src/scheduler/scheduler';
 import { Woolf } from '../src/woolf';
-import { IWoolfEventHandlers } from '../src/eventHandlers';
 
 const defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {
   Handler: 'index.handler',
@@ -77,48 +76,40 @@ describe('woolf workflow', () => {
     expect(result[1].sleepTime).toBe(20);
   });
 
-  // FIXME fix this test
-//   it('execute complexity workflow', async () => {
-//     const eventHandlers: Pick<IWoolfEventHandlers, 'startFunc'> = {
-//       startFunc: [(eventType, context) => {
-//         console.log(eventType, context);
-//       }],
-//     };
-//     woolf.updateEventHandlers(eventHandlers);
-//     // https://medium.com/@pavloosadchyi/parallel-running-dag-of-tasks-in-pythons-celery-4ea73c88c915
-//     const jobs = Array.from({ length: 14 }, (_, k) => k).map(_ => woolf.newJob());
-//     await forEach(jobs, async (job) => {
-//       await job.addFunc<ICountPayload>((e, _, cb) => {
-//         cb(null, {count: e.data.reduce((a, b) => a+b.count, 1)})});
-//     });
-//     //   1 - 3     6 - 9 -
-//     //  /     \  /        \
-//     // 0       5 - 7 - 10 - 12 - 13
-//     //  \     / \               /
-//     //   2 - 4   8 - 11 - - - -
-//
-//     woolf.addDependency(jobs[0], jobs[1]);
-//     woolf.addDependency(jobs[0], jobs[2]);
-//     woolf.addDependency(jobs[1], jobs[3]);
-//     woolf.addDependency(jobs[3], jobs[5]);
-//     woolf.addDependency(jobs[2], jobs[4]);
-//     woolf.addDependency(jobs[4], jobs[5]);
-//     woolf.addDependency(jobs[5], jobs[7]);
-//     woolf.addDependency(jobs[5], jobs[6]);
-//     woolf.addDependency(jobs[6], jobs[9]);
-//     woolf.addDependency(jobs[9], jobs[12]);
-//     woolf.addDependency(jobs[5], jobs[7]);
-//     woolf.addDependency(jobs[7], jobs[10]);
-//     woolf.addDependency(jobs[10], jobs[12]);
-//     woolf.addDependency(jobs[12], jobs[13]);
-//     woolf.addDependency(jobs[5], jobs[8]);
-//     woolf.addDependency(jobs[8], jobs[11]);
-//     woolf.addDependency(jobs[11], jobs[13]);
-//
-//     const result = (await woolf.run({ data: [{ count: 0 }] })) as ICountPayload[];
-//     expect(result).toHaveLength(1);
-//     expect(result[0].count).toBe(14);
-//   });
+  it('execute complexity workflow', async () => {
+    // https://medium.com/@pavloosadchyi/parallel-running-dag-of-tasks-in-pythons-celery-4ea73c88c915
+    const jobs = Array.from({ length: 14 }, (_, k) => k).map(_ => woolf.newJob());
+    await forEach(jobs, async (job) => {
+      await job.addFunc<ICountPayload>(countUpLambdaFunction);
+    });
+    //   1 - 3     6 - 9 -
+    //  /     \  /        \
+    // 0       5 - 7 - 10 - 12 - 13
+    //  \     / \               /
+    //   2 - 4   8 - 11 - - - -
+
+    woolf.addDependency(jobs[0], jobs[1]);
+    woolf.addDependency(jobs[0], jobs[2]);
+    woolf.addDependency(jobs[1], jobs[3]);
+    woolf.addDependency(jobs[3], jobs[5]);
+    woolf.addDependency(jobs[2], jobs[4]);
+    woolf.addDependency(jobs[4], jobs[5]);
+    woolf.addDependency(jobs[5], jobs[7]);
+    woolf.addDependency(jobs[5], jobs[6]);
+    woolf.addDependency(jobs[6], jobs[9]);
+    woolf.addDependency(jobs[9], jobs[12]);
+    woolf.addDependency(jobs[5], jobs[7]);
+    woolf.addDependency(jobs[7], jobs[10]);
+    woolf.addDependency(jobs[10], jobs[12]);
+    woolf.addDependency(jobs[12], jobs[13]);
+    woolf.addDependency(jobs[5], jobs[8]);
+    woolf.addDependency(jobs[8], jobs[11]);
+    woolf.addDependency(jobs[11], jobs[13]);
+
+    const result = (await woolf.run({ data: [{ count: 0 }] })) as ICountPayload[];
+    expect(result).toHaveLength(1);
+    expect(result[0].count).toBe(29);
+  });
 });
 
 describe('scheduler', () => {
@@ -169,12 +160,12 @@ describe('scheduler', () => {
     scheduler.addJob(job1);
     scheduler.addDependency(job0, job1);
 
-    const statsSummary1 = scheduler.stats().map(s => ({id: s.job.id, state: s.state}));
+    const statsSummary1 = scheduler.stats().map(s => ({id: s.job.id, state: s.state, waitingJobIDs: s.waitingJobIDs}));
     const expectedStats1 = [
-      {id: 0, state: JobState.Ready},
-      {id: 1, state: JobState.Suspend},
+      {id: 0, state: JobState.Ready, waitingJobIDs: []},
+      {id: 1, state: JobState.Suspend, waitingJobIDs: [0]},
     ];
-    expect(statsSummary1).toEqual(expect.arrayContaining(expectedStats1))
+    expect(statsSummary1).toEqual(expect.arrayContaining(expectedStats1));
 
     scheduler.doneJob(job0, {});
     const statsSummary2 = scheduler.stats().map(s => ({id: s.job.id, state: s.state}));

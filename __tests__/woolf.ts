@@ -1,7 +1,7 @@
 import { Lamool } from 'lamool/src/lamool';
 import { IWoolfEventHandlers } from '../src/eventHandlers';
-import { Woolf } from '../src/woolf';
 import { JobState } from '../src/scheduler/scheduler';
+import { Woolf } from '../src/woolf';
 
 describe('woolf', () => {
   let lamool: Lamool;
