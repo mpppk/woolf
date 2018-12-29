@@ -1,7 +1,9 @@
 import { CreateFunctionRequest } from 'aws-sdk/clients/lambda';
 import { Lamool } from 'lamool';
 import { LambdaFunction } from 'lamool/src/lambda';
+import { Job } from '../src/job';
 import { IWoolfPayload } from '../src/models';
+import { Scheduler } from '../src/scheduler/scheduler';
 import { Woolf } from '../src/woolf';
 
 const defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {
@@ -19,9 +21,13 @@ interface ISleepResult {
   sleepTime: number;
 }
 
-// interface ICountPayload {
-//   count: number;
-// }
+interface ICountPayload {
+  count: number;
+}
+
+const countUpLambdaFunction: LambdaFunction<IWoolfPayload<ICountPayload>, ICountPayload> = (e, _, cb) => {
+  cb(null, {count: e.data.reduce((a, b) => a+b.count, 1)});
+};
 
 const generateAsyncSleepFunc: (time: number) => LambdaFunction<IWoolfPayload<ISleepPayload>, ISleepResult> = (time: number) => {
   const funcStr = `
@@ -71,6 +77,12 @@ describe('woolf workflow', () => {
 
   // FIXME fix this test
 //   it('execute complexity workflow', async () => {
+//     const eventHandlers: Pick<IWoolfEventHandlers, 'startFunc'> = {
+//       startFunc: [(eventType, context) => {
+//         console.log(eventType, context);
+//       }],
+//     };
+//     woolf.updateEventHandlers(eventHandlers);
 //     // https://medium.com/@pavloosadchyi/parallel-running-dag-of-tasks-in-pythons-celery-4ea73c88c915
 //     const jobs = Array.from({ length: 14 }, (_, k) => k).map(_ => woolf.newJob());
 //     await forEach(jobs, async (job) => {
@@ -105,4 +117,44 @@ describe('woolf workflow', () => {
 //     expect(result).toHaveLength(1);
 //     expect(result[0].count).toBe(14);
 //   });
+});
+
+describe('scheduler', () => {
+  let scheduler = new Scheduler();
+  let lamool = new Lamool();
+
+  beforeEach(() => {
+    lamool.terminate(true);
+    lamool = new Lamool();
+    scheduler = new Scheduler();
+  });
+
+  afterAll(async () => {
+    lamool.terminate(true);
+  });
+
+  it('handle job status', async () => {
+    const job0 = new Job(0, lamool, defaultCreateFunctionRequest);
+    await job0.addFunc(countUpLambdaFunction);
+    scheduler.addJob(job0);
+    const job1 = new Job(1, lamool, defaultCreateFunctionRequest);
+    await job1.addFunc(countUpLambdaFunction);
+    scheduler.addJob(job1);
+    scheduler.addDependency(job0, job1);
+
+    expect(scheduler.isDoneJob(job0)).toBeFalsy();
+    expect(scheduler.isReadiedJob(job0)).toBeTruthy();
+    expect(scheduler.isSuspendedJob(job0)).toBeFalsy();
+    expect(scheduler.isDoneJob(job1)).toBeFalsy();
+    expect(scheduler.isReadiedJob(job1)).toBeFalsy();
+    expect(scheduler.isSuspendedJob(job1)).toBeTruthy();
+
+    scheduler.doneJob(job0, {});
+    expect(scheduler.isDoneJob(job0)).toBeTruthy();
+    expect(scheduler.isReadiedJob(job0)).toBeFalsy();
+    expect(scheduler.isSuspendedJob(job0)).toBeFalsy();
+    expect(scheduler.isDoneJob(job1)).toBeFalsy();
+    expect(scheduler.isReadiedJob(job1)).toBeTruthy();
+    expect(scheduler.isSuspendedJob(job1)).toBeFalsy();
+  });
 });

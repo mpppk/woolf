@@ -33,10 +33,42 @@ export class Scheduler {
     return _.zip(nextJobs, dataList) as Array<[Job, IWoolfResult[]]>;
   }
 
+  public isReadiedJob(job: Job): boolean {
+    if (this.isDoneJob(job)) {
+      return false;
+    }
+    const fromJobs = this.graph.getFromNodes(job);
+    return fromJobs.every((dependencyJob) => this.doneJobs.has(dependencyJob.id));
+  }
+
   public getReadiedJobs(): Array<[Job, IWoolfResult[]]> {
       const readiedJobs = this.graph.getNodes().filter(this.isReadiedJob.bind(this));
       const dataList = readiedJobs.map(this.getDataListForJob.bind(this));
       return _.zip(readiedJobs, dataList) as Array<[Job, IWoolfResult[]]>;
+  }
+
+  public isSuspendedJob(job: Job): boolean {
+    return !this.isDoneJob(job) && !this.isReadiedJob(job);
+  }
+
+  public getSuspendedJobs(): Job[] {
+    const jobIDs = this.graph.getNodes().map(job => job.id);
+    const doneJobIDs = Array.from(this.doneJobs.keys());
+    const readiedJobIDs = this.getReadiedJobs().map(d => d[0].id);
+    const suspendedJobIDs = _.difference(_.difference(jobIDs, doneJobIDs), readiedJobIDs);
+    return suspendedJobIDs
+      .map((id) => this.graph.getNode(id))
+      .filter(job => job) as Job[];
+  }
+
+  public isDoneJob(job: Job): boolean {
+    return Array.from(this.doneJobs.keys()).find(id => id === job.id) !== undefined;
+  }
+
+  public getDoneJobs(): Job[] {
+    return Array.from(this.doneJobs.keys())
+      .map((id) => this.graph.getNode(id))
+      .filter(job => job) as Job[];
   }
 
   public isLastJob(job: Job): boolean {
@@ -47,10 +79,5 @@ export class Scheduler {
     return this.graph.getFromNodes(job)
       .map((fromJob) => this.doneJobs.get(fromJob.id))
       .map((dl) => dl ? dl : []);
-  }
-
-  private isReadiedJob(job: Job): boolean {
-    const fromJobs = this.graph.getFromNodes(job);
-    return fromJobs.every((dependencyJob) => this.doneJobs.has(dependencyJob.id));
   }
 }

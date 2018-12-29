@@ -37,6 +37,10 @@ export class DAG<Node extends INode> {
     return edges === undefined ? [] : edges;
   }
 
+  public getNode(id: number): Node | undefined {
+    return this.nodes.get(id);
+  }
+
   public getNodes(): Node[] {
     return Array.from(this.nodes.values());
   }
