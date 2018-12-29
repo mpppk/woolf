@@ -14,6 +14,7 @@ export enum JobState {
 export interface IJobStat {
   job: Job,
   state: JobState,
+  waitingJobIDs: number[],
 }
 
 export class Scheduler {
@@ -100,7 +101,11 @@ export class Scheduler {
   }
 
   public stats(): IJobStat[] {
-    return this.graph.getNodes().map((job) => ({job, state: this.getJobState(job)}));
+    return this.graph.getNodes().map((job) => ({
+      job,
+      state: this.getJobState(job),
+      waitingJobIDs: this.graph.getFromNodes(job).map((j) => j.id),
+    }));
   }
 
   private getDataListForJob(job: Job): IWoolfResult[] {
