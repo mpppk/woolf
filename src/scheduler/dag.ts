@@ -78,7 +78,7 @@ export class DAG<Node extends INode> {
     }
 
     if (fromNodes.find((edge) => edge.id === from.id) === undefined) {
-      fromNodes.push(to);
+      fromNodes.push(from);
     }
   }
 
