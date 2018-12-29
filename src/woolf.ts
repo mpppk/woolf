@@ -71,6 +71,7 @@ export class Woolf {
         ...jobContext,
         nextJobs: nextJobAndDataList.map(t => t[0]),
         result,
+        stats: this.stats(),
       });
       if (this.scheduler.isLastJob(job)) {
         return [result];

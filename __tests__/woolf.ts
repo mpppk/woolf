@@ -1,6 +1,7 @@
 import { Lamool } from 'lamool/src/lamool';
 import { IWoolfEventHandlers } from '../src/eventHandlers';
 import { Woolf } from '../src/woolf';
+import { JobState } from '../src/scheduler/scheduler';
 
 describe('woolf', () => {
   let lamool: Lamool;
@@ -97,6 +98,8 @@ describe('woolf', () => {
         expect(context.payload).toEqual(initialPayload);
         expect(context.result).toEqual(expectedResult);
         expect(context.nextJobs).toHaveLength(0);
+        const statsSummary = context.stats.map(s => ({id: s.job.id, state: s.state}));
+        expect(statsSummary).toEqual(expect.arrayContaining([{id: 0, state: JobState.Done}]));
         startJobEventCBIsCalled = true;
       }],
       start: [(eventType, context) => {
