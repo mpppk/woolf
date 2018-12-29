@@ -1,10 +1,9 @@
 import {
   IWoolfAddFuncEventContext,
   IWoolfBaseJobEventContext,
-  IWoolfEventHandlers, IWoolfFuncEventContext,
+  IWoolfEventHandlers, IWoolfFinishJobEventContext, IWoolfFuncEventContext,
   IWoolfJobEventContext,
   IWoolfWFEventContext,
-  WoolfEventContext,
   WoolfEventHandler
 } from './eventHandlers';
 import { IWoolfPayload, IWoolfResult } from './models';
@@ -54,7 +53,7 @@ export class EventManager {
   }
 
   public dispatchEvent(eventName: WoolfEventName, context: any) {
-    const eventHandler: Array<WoolfEventHandler<WoolfEventContext>> = this.eventHandlers[eventName]; // FIXME
+    const eventHandler: Array<WoolfEventHandler<any>> = this.eventHandlers[eventName]; // FIXME
     eventHandler.forEach(cb => cb(eventName, context));
   }
 
@@ -66,7 +65,7 @@ export class EventManager {
     this.dispatchEvent('startJob', context);
   }
 
-  public dispatchFinishJobEvent(context: IWoolfJobEventContext) {
+  public dispatchFinishJobEvent(context: IWoolfFinishJobEventContext) {
     this.dispatchEvent('finishJob', context);
   }
 

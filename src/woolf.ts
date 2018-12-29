@@ -6,7 +6,7 @@ import { EventManager } from './eventManager';
 import { IJobOption, Job } from './job';
 import { ILambda } from './lambda/ILambda';
 import { IWoolfPayload, IWoolfResult } from './models';
-import { Scheduler } from './scheduler/scheduler';
+import { IJobStat, Scheduler } from './scheduler/scheduler';
 
 export interface IWoolfOption {
   name: string;
@@ -66,8 +66,13 @@ export class Woolf {
       const jobContext = EventManager.getJobContext(this.name, job.name, payload);
       this.eventManager.dispatchStartJobEvent(jobContext);
       const result = await job.run(payload);
-      this.eventManager.dispatchFinishJobEvent({...jobContext, result});
       const nextJobAndDataList = this.scheduler.doneJob(job, result);
+      this.eventManager.dispatchFinishJobEvent({
+        ...jobContext,
+        nextJobs: nextJobAndDataList.map(t => t[0]),
+        result,
+        stats: this.stats(),
+      });
       if (this.scheduler.isLastJob(job)) {
         return [result];
       }
@@ -86,5 +91,9 @@ export class Woolf {
     const r = _.flatten(await map(initialJobs, async (job) => await runJob(job, initialPayload)));
     this.eventManager.dispatchFinishEvent({...wfContext, result: r});
     return r;
+  }
+
+  public stats(): IJobStat[] {
+    return this.scheduler.stats();
   }
 }
