@@ -2,7 +2,7 @@ import { CreateFunctionRequest } from 'aws-sdk/clients/lambda';
 import * as _ from 'lodash';
 import { IJobOption, Job } from '../job';
 import { ILambda } from '../lambda/ILambda';
-import { IWoolfResult } from '../models';
+import { IWoolfData } from '../models';
 import { DAG } from './dag';
 
 export enum JobState {
@@ -19,7 +19,7 @@ export interface IJobStat {
 
 export class Scheduler {
   private graph = new DAG<Job>();
-  private doneJobs: Map<number, IWoolfResult> = new Map();
+  private doneJobs: Map<number, IWoolfData> = new Map();
 
   public addJob(job: Job) {
     this.graph.addNode(job);
@@ -36,13 +36,13 @@ export class Scheduler {
     this.graph.addEdge(from, to);
   }
 
-  public doneJob(job: Job, result: IWoolfResult): Array<[Job, IWoolfResult[]]> {
+  public doneJob(job: Job, result: IWoolfData): Array<[Job, IWoolfData[]]> {
     this.doneJobs.set(job.id, result);
     const nextJobs = this.graph.getToNodes(job)
       .filter((djob) => !this.doneJobs.has(djob.id))
       .filter(this.isReadiedJob.bind(this));
-    const dataList: IWoolfResult[][] = nextJobs.map(this.getDataListForJob.bind(this));
-    return _.zip(nextJobs, dataList) as Array<[Job, IWoolfResult[]]>;
+    const dataList: IWoolfData[][] = nextJobs.map(this.getDataListForJob.bind(this));
+    return _.zip(nextJobs, dataList) as Array<[Job, IWoolfData[]]>;
   }
 
   public isReadiedJob(job: Job): boolean {
@@ -53,10 +53,10 @@ export class Scheduler {
     return fromJobs.every((dependencyJob) => this.doneJobs.has(dependencyJob.id));
   }
 
-  public getReadiedJobs(): Array<[Job, IWoolfResult[]]> {
+  public getReadiedJobs(): Array<[Job, IWoolfData[]]> {
       const readiedJobs = this.graph.getNodes().filter(this.isReadiedJob.bind(this));
       const dataList = readiedJobs.map(this.getDataListForJob.bind(this));
-      return _.zip(readiedJobs, dataList) as Array<[Job, IWoolfResult[]]>;
+      return _.zip(readiedJobs, dataList) as Array<[Job, IWoolfData[]]>;
   }
 
   public isSuspendedJob(job: Job): boolean {
@@ -108,7 +108,7 @@ export class Scheduler {
     }));
   }
 
-  private getDataListForJob(job: Job): IWoolfResult[] {
+  private getDataListForJob(job: Job): IWoolfData[] {
     return this.graph.getFromNodes(job)
       .map((fromJob) => this.doneJobs.get(fromJob.id))
       .map((dl) => dl ? dl : []);

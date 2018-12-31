@@ -1,11 +1,11 @@
 import { Job } from './job';
-import { IWoolfPayload, IWoolfResult } from './models';
+import { IWoolfData } from './models';
 import { IJobStat } from './scheduler/scheduler';
 
 export interface IWoolfWFEventContext {
   workflowName: string;
-  payload: IWoolfPayload;
-  result: IWoolfResult;
+  payload: IWoolfData;
+  result: IWoolfData;
 }
 
 export interface IWoolfBaseJobEventContext {
@@ -14,8 +14,8 @@ export interface IWoolfBaseJobEventContext {
 }
 
 export interface IWoolfJobEventContext extends IWoolfBaseJobEventContext {
-  payload: IWoolfPayload;
-  result: IWoolfResult;
+  payload: IWoolfData;
+  result: IWoolfData;
 }
 
 export interface IWoolfFinishJobEventContext extends IWoolfJobEventContext {

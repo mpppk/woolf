@@ -1,7 +1,12 @@
 import { Lamool } from 'lamool/src/lamool';
 import { IWoolfEventHandlers } from '../src/eventHandlers';
+import { IWoolfPayload } from '../src/models';
 import { JobState } from '../src/scheduler/scheduler';
 import { Woolf } from '../src/woolf';
+
+interface ICountPayload {
+  count: number;
+}
 
 describe('woolf', () => {
   let lamool: Lamool;
@@ -120,7 +125,7 @@ describe('woolf', () => {
     };
     woolf.updateEventHandlers(eventHandlers);
     const job = woolf.newJob({name: jobName});
-    await job.addFunc<{count: number}>((event, _, cb) => {cb(null, {count: event.data[0].count+1})}); // FIXME
+    await job.addFunc<IWoolfPayload<ICountPayload>, ICountPayload>((event, _, cb) => {cb(null, {count: event.data[0].count+1})}); // FIXME
     await woolf.run(initialPayload);
     expect(startEventCBIsCalled).toBeTruthy();
     expect(finishEventCBIsCalled).toBeTruthy();
@@ -176,7 +181,7 @@ describe('woolf', () => {
     };
     woolf.updateEventHandlers(eventHandlers);
     const job = woolf.newJob({name: jobName});
-    await job.addFunc<{count: number}>((e) => {return {count: e.data[0].count+1}}, {FunctionName: funcName}); // tslint:disable-line
+    await job.addFunc<IWoolfPayload<ICountPayload>, ICountPayload>((e) => {return {count: e.data[0].count+1}}, {FunctionName: funcName}); // tslint:disable-line
     await woolf.run(initialPayload);
     expect(finishFuncEventIsCalled).toBeTruthy();
     expect(startFuncEventIsCalled).toBeTruthy();

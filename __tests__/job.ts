@@ -1,5 +1,6 @@
 import { CreateFunctionRequest } from 'aws-sdk/clients/lambda';
 import { Lamool } from 'lamool';
+import { IWoolfPayload } from '../src/models';
 import { Woolf } from '../src/woolf';
 
 const defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {
@@ -7,6 +8,10 @@ const defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {
   Role: '-',
   Runtime: 'nodejs8.10',
 };
+
+interface ICountPayload {
+  count: number;
+}
 
 describe('woolf job', () => {
   const lamool = new Lamool();
@@ -18,9 +23,9 @@ describe('woolf job', () => {
 
   it('execute functions', async () => {
     const job = woolf.newJob({name: 'testJob'});
-    await job.addFunc<{count: number}>((event, _, cb) => {cb(null, {count: event.data[0].count+1})}); // FIXME
-    await job.addFunc<{count: number}>((event, _, cb) => {cb(null, {count: event.data[0].count+1})}); // FIXME
-    await job.addFunc<{count: number}>((event, _, cb) => {cb(null, {count: event.data[0].count+2})}); // FIXME
+    await job.addFunc<IWoolfPayload<ICountPayload>, ICountPayload>((event, _, cb) => {cb(null, {count: event.data[0].count+1})}); // FIXME
+    await job.addFunc<IWoolfPayload<ICountPayload>, ICountPayload>((event, _, cb) => {cb(null, {count: event.data[0].count+1})}); // FIXME
+    await job.addFunc<IWoolfPayload<ICountPayload>, ICountPayload>((event, _, cb) => {cb(null, {count: event.data[0].count+2})}); // FIXME
     const newData = await job.run(Woolf.dataListToWoolfPayload([{count: 1}])) as {count: number};
     expect(newData.count).toBe(5);
   });

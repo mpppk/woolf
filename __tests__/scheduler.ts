@@ -56,9 +56,9 @@ describe('woolf workflow', () => {
 
   it('execute serial jobs', async () => {
     const job0 = woolf.newJob();
-    await job0.addFunc<ISleepPayload, ISleepResult>(generateAsyncSleepFunc(10)); // FIXME
+    await job0.addFunc<IWoolfPayload<ISleepPayload>, ISleepResult>(generateAsyncSleepFunc(10)); // FIXME
     const job1 = woolf.newJob();
-    await job1.addFunc<ISleepPayload, ISleepResult>(generateAsyncSleepFunc(20)); // FIXME
+    await job1.addFunc<IWoolfPayload<ISleepPayload>, ISleepResult>(generateAsyncSleepFunc(20)); // FIXME
     woolf.addDependency(job0, job1);
     const result = (await woolf.run({ data: [{ sleepTime: 0 }] })) as ISleepResult[];
     expect(result).toHaveLength(1);
@@ -67,9 +67,9 @@ describe('woolf workflow', () => {
 
   it('execute parallel jobs', async () => {
     const job0 = woolf.newJob();
-    await job0.addFunc<ISleepPayload, ISleepResult>(generateAsyncSleepFunc(10)); // FIXME
+    await job0.addFunc<IWoolfPayload<ISleepPayload>, ISleepResult>(generateAsyncSleepFunc(10)); // FIXME
     const job1 = woolf.newJob();
-    await job1.addFunc<ISleepPayload, ISleepResult>(generateAsyncSleepFunc(20)); // FIXME
+    await job1.addFunc<IWoolfPayload<ISleepPayload>, ISleepResult>(generateAsyncSleepFunc(20)); // FIXME
     const result = (await woolf.run({ data: [{ sleepTime: 0 }] })) as ISleepResult[];
     expect(result).toHaveLength(2);
     expect(result[0].sleepTime).toBe(10);
@@ -80,7 +80,7 @@ describe('woolf workflow', () => {
     // https://medium.com/@pavloosadchyi/parallel-running-dag-of-tasks-in-pythons-celery-4ea73c88c915
     const jobs = Array.from({ length: 14 }, (_, k) => k).map(_ => woolf.newJob());
     await forEach(jobs, async (job) => {
-      await job.addFunc<ICountPayload>(countUpLambdaFunction);
+      await job.addFunc<IWoolfPayload<ICountPayload>, ICountPayload>(countUpLambdaFunction);
     });
     //   1 - 3     6 - 9 -
     //  /     \  /        \

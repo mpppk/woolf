@@ -6,7 +6,7 @@ import { IWoolfFuncEventContext } from './eventHandlers';
 import { EventManager } from './eventManager';
 import { ILambda } from './lambda/ILambda';
 import { PLambda } from './lambda/PLambda';
-import { IWoolfPayload, IWoolfResult } from './models';
+import { IWoolfData } from './models';
 
 export interface IJobOption {
   name: string;
@@ -30,7 +30,7 @@ export class Job {
     this.eventManager = jobOption.eventManager ? jobOption.eventManager : new EventManager();
   }
 
-  public async addFunc<T, U = T>(func: LambdaFunction<IWoolfPayload<T>, U>, params: Partial<CreateFunctionRequest> = {}): Promise<FunctionConfiguration | null> {
+  public async addFunc<T extends IWoolfData = IWoolfData, U = T>(func: LambdaFunction<T, U>, params: Partial<CreateFunctionRequest> = {}): Promise<FunctionConfiguration | null> {
     const funcName = this.name + '-' + (params.FunctionName ? params.FunctionName : 'function' + this.funcNames.length);
 
     const combinedParams = {
@@ -46,8 +46,8 @@ export class Job {
     return await this.plambda.createFunction(combinedParams as CreateFunctionRequest); // FIXME
   }
 
-  public async run(payload: IWoolfPayload): Promise<IWoolfResult> {
-    const resultPayload = await reduce(this.funcNames, async (accData: IWoolfPayload, funcName: string) => {
+  public async run(payload: IWoolfData): Promise<IWoolfData> {
+    const resultPayload = await reduce(this.funcNames, async (accData: IWoolfData, funcName: string) => {
       const context = {
         ...this.getBaseEventContext(),
         funcName,
@@ -56,7 +56,7 @@ export class Job {
       };
       this.eventManager.dispatchStartFuncEvent(context);
       try {
-        const result: IWoolfResult = await this.plambda.invoke({
+        const result: IWoolfData = await this.plambda.invoke({
           FunctionName: funcName,
           Payload: JSON.stringify(accData),
         });
