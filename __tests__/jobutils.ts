@@ -1,28 +1,95 @@
-import { mergeByPropAndIndices, mergeByResultPath, parseIndexSignature } from '../src/jobutil';
+import { getNestedPath, getNextPath, mergeByKeys, mergeByResultPath, parseIndexSignature } from '../src/jobutil';
 
-describe('mergeByPropAndIndices', () => {
+describe('getNextPath', () => {
+  it('get value by string path', async () => {
+    const result = getNextPath({a: 1}, 'a');
+    expect(result).toEqual({});
+  });
+
+  it('get object by string path', async () => {
+    const result = getNextPath({a: {b:1}}, 'a');
+    expect(result).toEqual({b: 1});
+  });
+
+  it('get value by number path', async () => {
+    const result = getNextPath([1], 0);
+    expect(result).toEqual({});
+    const result2 = getNextPath([1, 2], 1);
+    expect(result2).toEqual({});
+  });
+
+  it('get object by number path', async () => {
+    const result = getNextPath([{a:1}], 0);
+    expect(result).toEqual({a: 1});
+  });
+
+  it('add object to root object by string path', async () => {
+    const data = {c: 1};
+    const result = getNextPath(data, 'a');
+    expect(result).toEqual({});
+    expect(data).toEqual({...data, a: {}});
+    result['b'] = 1; //tslint:disable-line
+    expect(data).toEqual({...data, a: {b: 1}});
+  });
+
+  it('add object to nested property by string path', async () => {
+    const data = {a: 1};
+    const result = getNextPath(data, 'a');
+    expect(result).toEqual({});
+    expect(data).toEqual({a: {}});
+    result['b'] = 1; //tslint:disable-line
+    expect(data).toEqual({a: {b: 1}});
+  });
+});
+
+describe('getNestedPath', () => {
+  const newEmptyObjectFunc = () => ({});
+  it('get string->number paths', async () => {
+    const data = { a: 1 };
+    const result = getNestedPath(data,  ['b', 0], newEmptyObjectFunc);
+    expect(result).toEqual({});
+    expect(data).toEqual({ a: 1, b: [{}] });
+  });
+
+  it('get string->string paths', async () => {
+    const data = { a: 1 };
+    const result = getNestedPath(data,  ['b', 'c'], newEmptyObjectFunc);
+    expect(result).toEqual({});
+    expect(data).toEqual({ a: 1, b: {c: {}} });
+  });
+
+  it('add value by newEmptyValueFunc', async () => {
+    const newEmptyArrayFunc = () => [];
+    const data = { a: 1 };
+    const result = getNestedPath(data,  ['b', 'c'], newEmptyArrayFunc);
+    expect(result).toEqual([]);
+    expect(data).toEqual({ a: 1, b: {c: []} });
+  });
+});
+
+describe('mergeByKeys', () => {
   it('add result by prop and index', async () => {
-    const result = mergeByPropAndIndices({a: 1}, {c: 2}, 'b', [0]);
+    const result = mergeByKeys({a: 1}, {c: 2}, ['b', 0]);
     expect(result).toEqual({a:1, b: [{c: 2}]});
   });
 
   it('overwrite by result by prop and index', async () => {
-    const result = mergeByPropAndIndices({a: 1}, {c: 2}, 'a', [0]);
+    const result = mergeByKeys({a: 1}, {c: 2}, ['a', 0]);
     expect(result).toEqual({a: [{c: 2}]});
   });
 
   it('add result by prop and indices', async () => {
-    const result = mergeByPropAndIndices({a: 1}, {c: 2}, 'b', [0, 0]);
+    const result = mergeByKeys({a: 1}, {c: 2}, ['b', 0, 0]);
     expect(result).toEqual({a:1, b: [[{c: 2}]]});
   });
 
   it('overwrite result by prop and indices', async () => {
-    const result = mergeByPropAndIndices({a: 1, b: [[0, 1]]}, {c: 2}, 'b', [0, 1]);
+    const result = mergeByKeys({a: 1, b: [[0, 1]]}, {c: 2}, ['b', 0, 1]);
     expect(result).toEqual({a:1, b: [[0, {c: 2}]]});
   });
 
-  it('throw error if ', async () => {
-    expect(() => mergeByPropAndIndices({a: 1}, {c: 2}, 'a', [1])).toThrow();
+  it('throw error if index of nonexistence element is given', async () => {
+    expect(() => mergeByKeys({a: 1}, {c: 2}, ['a', 1])).toThrow();
   });
 });
 
@@ -64,11 +131,6 @@ describe('mergeByResultPath', () => {
     const result = mergeByResultPath({a:1}, {a:2}, '$.b.c');
     expect(result).toEqual({a:1, b: {c: {a:2}}});
   });
-
-  // it('add to array', async () => {
-  //   const result = mergeByResultPath({a:1, b: []}, {a:2}, '$.b[0]');
-  //   expect(result).toEqual({a:1, b: {a:2}});
-  // });
 
   it('update exist property', async () => {
     const result = mergeByResultPath({a:1, b:1}, {a:2}, '$.b');

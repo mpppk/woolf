@@ -26,8 +26,7 @@ export const mergeByResultPath = (data: IWoolfData, result: IWoolfData, resultPa
   const resultTarget = parsedResultPath.reduce((cData, path) => {
     if (path.includes('[')) {
       const [prop, indices] = parseIndexSignature(path);
-      return mergeByPropAndIndices(cData, [], prop, indices);
-      return indices.reduce(((d, i) => d[i]), cData[prop]);
+      return mergeByKeys(cData, [], [prop, ...indices]);
     }
 
     if (!cData.hasOwnProperty(path)) {
@@ -39,54 +38,34 @@ export const mergeByResultPath = (data: IWoolfData, result: IWoolfData, resultPa
   return newData;
 };
 
-export const mergeByPropAndIndices = (data: any, result: any, prop: string, indices: number[]) => {
+export const mergeByKeys = (data: any, result: any, keys: Array<string | number>) => {
   const newData = {...data};
-  if (indices.length <= 0) {
+  if (keys.length <= 0) {
     throw new Error('empty indices');
   }
 
-  if (!prop) {
-    throw new Error('empty prop');
-  }
+  const newKeys = [...keys];
+  const lastKey = newKeys.pop() as string | number;
+  const getEmptyValueFunc = typeof lastKey === 'string' ?
+    newEmptyObjectOrArrayFunc('object') :
+    newEmptyObjectOrArrayFunc('array');
 
-  if (!newData.hasOwnProperty(prop) || !Array.isArray(newData[prop])) {
-    newData[prop] = [];
-  }
+  const targetData = getNestedPath(newData, newKeys, getEmptyValueFunc);
 
-  const newIndices = [...indices];
-  const lastIndex = newIndices.pop() as number;
-
-  const getNextArray = (d: any, i: number) => {
-    if (i === 0 && d.length <= 0) {
-      d.push([]);
-      return d[0];
-    }
-
-    if (!Array.isArray(d) || d.length <= i) {
-      throw new Error(`invalid index: ${i} of ${newIndices}`);
-    }
-    if (!Array.isArray(d[i])) {
-      d[i] = [];
-    }
-    return d[i];
-  };
-
-  const targetArray = newIndices.reduce(getNextArray, newData[prop]);
-
-  if (lastIndex === 0) {
-    if (targetArray.length > 0) {
-      targetArray[lastIndex] = result;
-      return newData;
-    }
-    targetArray.push(result);
+  if (typeof lastKey === 'string') {
+    targetData[lastKey] = result;
     return newData;
   }
 
-  if (!Array.isArray(targetArray) || targetArray.length <= lastIndex) {
-    throw new Error(`invalid index: ${lastIndex} of ${indices}: targetArray: ${targetArray}`);
+  if (targetData.length === 0 && lastKey === 0) {
+    targetData.push(result);
+    return newData;
   }
 
-  targetArray[lastIndex] = result;
+  if (targetData.length <= lastKey) {
+    throw new Error('invalid path: ' + keys);
+  }
+  targetData[lastKey] = result;
   return newData;
 };
 
@@ -104,4 +83,72 @@ export const parseIndexSignature = (path: string): [string, number[]] => {
     throw new Error('invalid index: ' + path);
   }
   return [prop, indices];
+};
+
+export const getNestedPath = (data: any, paths: Array<number | string>, newEmptyValueFunc: () => any): any => {
+  for (let i = 0; i < paths.length - 1; i++) {
+    const path = paths[i];
+    const nextKey = paths[i+1];
+    const newValueFunc = Number.isInteger(nextKey as number) ?
+      newEmptyObjectOrArrayFunc('array') :
+      newEmptyObjectOrArrayFunc('object');
+    data = getNextPath(data, path, newValueFunc);
+  }
+  const lastPath = paths[paths.length - 1];
+
+  switch (typeof lastPath) {
+    case 'string':
+      data[lastPath] = newEmptyValueFunc();
+      return data[lastPath];
+    case 'number':
+      if (data.length === 0 && lastPath === 0) {
+        data.push(newEmptyValueFunc());
+        return data[0];
+      }
+
+      if (data.length <= lastPath) {
+        throw new Error('invalid path: ' + paths);
+      }
+      return data[lastPath];
+  }
+};
+
+export const getNextPath = (d: any, path: number | string,
+                            newEmptyValueFunc: () => any = newEmptyObjectOrArrayFunc('object')) => {
+  if (typeof path === 'number') {
+    if (Number.isInteger(path)) {
+      return getNextArray(d, path, newEmptyValueFunc);
+    }
+    throw new Error('invalid path: ' + path);
+  }
+  return getNextValue(d, path, newEmptyValueFunc);
+};
+
+const getNextArray = (d: any[], i: number, newEmptyValueFunc: () => any): any => {
+  if (!Array.isArray(d)) {
+    throw new Error('invalid data: ' + d);
+  }
+  if (i === 0 && d.length <= 0) {
+    d.push(newEmptyValueFunc());
+    return d[0];
+  }
+
+  if (d.length <= i) {
+    throw new Error(`invalid index: ${i}`);
+  }
+  if (!(d[i] instanceof Object)) {
+    d[i] = newEmptyValueFunc();
+  }
+  return d[i];
+};
+
+const getNextValue = (data: any, path: string, newEmptyValueFunc: () => any): any => {
+  if (!data.hasOwnProperty(path) || !(data[path] instanceof Object)) {
+    data[path] = newEmptyValueFunc();
+  }
+  return data[path];
+};
+
+const newEmptyObjectOrArrayFunc = (type: 'object' | 'array') => {
+  return () => (type === 'object' ? {} : []);
 };
