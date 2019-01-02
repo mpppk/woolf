@@ -152,3 +152,23 @@ const getNextValue = (data: any, path: string, newEmptyValueFunc: () => any): an
 const newEmptyObjectOrArrayFunc = (type: 'object' | 'array') => {
   return () => (type === 'object' ? {} : []);
 };
+
+export const parseReferencePath = (path: string): Array<number | string> => {
+  const paths = path.split('.');
+  const firstPath = paths.shift();
+  if (!firstPath) {
+    throw new Error('ResultPath is empty: ' + path);
+  }
+
+  if (firstPath !== '$') {
+    throw new Error('ResultPath must be start by $, actual: ' + path);
+  }
+
+  return _.flatMap(paths, (p: string) => {
+    if (path.includes('[')) {
+      const [prop, indices] = parseIndexSignature(p);
+      return [prop, ...indices];
+    }
+    return p;
+  });
+};

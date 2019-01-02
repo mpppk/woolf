@@ -1,4 +1,27 @@
-import { getNestedPath, getNextPath, mergeByKeys, mergeByResultPath, parseIndexSignature } from '../src/jobutil';
+import {
+  getNestedPath,
+  getNextPath,
+  mergeByKeys,
+  mergeByResultPath,
+  parseIndexSignature,
+  parseReferencePath
+} from '../src/jobutil';
+
+describe('parseReferencePath', () => {
+  it('can parse reference path', async () => {
+    const paths = parseReferencePath('$.a[0].b');
+    expect(paths).toEqual(['a', 0, 'b']);
+  });
+
+  it('can parse complexity reference path', async () => {
+    const paths = parseReferencePath('$.a[0][1].b.c[2]');
+    expect(paths).toEqual(['a', 0, 1, 'b', 'c', 2]);
+  });
+
+  it('throw error if $ does not contain', async () => {
+    expect(() => parseReferencePath('a')).toThrow();
+  });
+});
 
 describe('getNextPath', () => {
   it('get value by string path', async () => {
