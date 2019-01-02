@@ -158,7 +158,7 @@ describe('woolf', () => {
     const jobName = 'test-job';
     const funcName = 'test-func';
     const initialPayload = Woolf.dataListToWoolfPayload([{count: 0}]);
-    const expectedResults = {count: 1};
+    const expectedResults = {data: [{count: 1}]};
     const eventHandlers: Partial<IWoolfEventHandlers> = {
       finishFunc: [(eventType, context) => {
         expect(eventType).toBe('finishFunc');

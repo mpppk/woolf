@@ -1,4 +1,5 @@
 import * as jp from 'jsonpath';
+import * as _ from 'lodash';
 import { IWoolfData } from './models';
 
 export const mergeByResultPath = (data: IWoolfData, result: IWoolfData, resultPath: string): IWoolfData => {
@@ -8,40 +9,14 @@ export const mergeByResultPath = (data: IWoolfData, result: IWoolfData, resultPa
     throw new Error(`failed to parse ResultPath: ${resultPath}`);
   }
 
-  const parsedResultPath = resultPath.split('.');
-  const firstPath = parsedResultPath.shift();
-  if (!firstPath) {
-    throw new Error('ResultPath is empty: ' + resultPath);
-  }
-
-  if (firstPath !== '$') {
-    throw new Error('ResultPath must be start by $, actual: ' + resultPath);
-  }
-
-  const newData: IWoolfData = {...data};
-  const lastPath = parsedResultPath.pop();
-  if (!lastPath) {
-    return result;
-  }
-  const resultTarget = parsedResultPath.reduce((cData, path) => {
-    if (path.includes('[')) {
-      const [prop, indices] = parseIndexSignature(path);
-      return mergeByKeys(cData, [], [prop, ...indices]);
-    }
-
-    if (!cData.hasOwnProperty(path)) {
-      cData[path] = {};
-    }
-    return cData[path];
-  }, newData);
-  resultTarget[lastPath] = result;
-  return newData;
+  const parsedResultPath = parseReferencePath(resultPath);
+  return mergeByKeys(data, result, parsedResultPath);
 };
 
-export const mergeByKeys = (data: any, result: any, keys: Array<string | number>) => {
+export const mergeByKeys = (data: any, result: any, keys: Array<string | number>): any => {
   const newData = {...data};
   if (keys.length <= 0) {
-    throw new Error('empty indices');
+    return result;
   }
 
   const newKeys = [...keys];
@@ -86,6 +61,9 @@ export const parseIndexSignature = (path: string): [string, number[]] => {
 };
 
 export const getNestedPath = (data: any, paths: Array<number | string>, newEmptyValueFunc: () => any): any => {
+  if (paths.length <= 0) {
+    return data;
+  }
   for (let i = 0; i < paths.length - 1; i++) {
     const path = paths[i];
     const nextKey = paths[i+1];

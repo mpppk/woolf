@@ -88,9 +88,21 @@ describe('getNestedPath', () => {
     expect(result).toEqual([]);
     expect(data).toEqual({ a: 1, b: {c: []} });
   });
+
+  it('return original data if empty keys are given', async () => {
+    const newEmptyArrayFunc = () => [];
+    const data = { a: 1 };
+    const result = getNestedPath(data,  [], newEmptyArrayFunc);
+    expect(result).toEqual(data);
+  });
 });
 
 describe('mergeByKeys', () => {
+  it('add result by single prop', async () => {
+    const result = mergeByKeys({a: 1}, {c: 2}, ['b']);
+    expect(result).toEqual({a:1, b: {c: 2}});
+  });
+
   it('add result by prop and index', async () => {
     const result = mergeByKeys({a: 1}, {c: 2}, ['b', 0]);
     expect(result).toEqual({a:1, b: [{c: 2}]});
@@ -158,6 +170,26 @@ describe('mergeByResultPath', () => {
   it('update exist property', async () => {
     const result = mergeByResultPath({a:1, b:1}, {a:2}, '$.b');
     expect(result).toEqual({a:1, b: {a:2}});
+  });
+
+  it('add array', async () => {
+    const result = mergeByResultPath({a:1}, {c:2}, '$.b[0]');
+    expect(result).toEqual({a:1, b: [{c: 2}]});
+  });
+
+  it('update exist array', async () => {
+    const result = mergeByResultPath({a:1, b:[0]}, {c:2}, '$.b[0]');
+    expect(result).toEqual({a:1, b: [{c: 2}]});
+  });
+
+  it('add by string->index query', async () => {
+    const result = mergeByResultPath({a:1}, {d:2}, '$.b.c[0]');
+    expect(result).toEqual({a:1, b: {c:[{d: 2}]}});
+  });
+
+  it('add by index->string query', async () => {
+    const result = mergeByResultPath({a:1, b:1}, {d:2}, '$.b[0].c');
+    expect(result).toEqual({a:1, b: [{c: {d:2}}]});
   });
 
   it('throw error if ResultPath is empty', async () => {
