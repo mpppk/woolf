@@ -11,3 +11,19 @@ export const generateCreateFunctionRequest = <T>(name: string, handler: LambdaFu
     Runtime: 'nodejs8.10',
   };
 };
+
+interface ICountData {
+  count: number;
+}
+
+export const countUpLambdaFunction: LambdaFunction<ICountData | ICountData[], ICountData> = (event, _, cb) => {
+  let newEvents;
+  if (Array.isArray(event)) {
+    newEvents = event;
+  }else{
+    newEvents = [event];
+  }
+
+  const count = newEvents.reduce((a, e) => a + e.count, 1);
+  cb(null, {count});
+};

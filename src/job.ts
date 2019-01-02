@@ -63,7 +63,7 @@ export class Job {
   }
 
   public async run(payload: IWoolfData): Promise<IWoolfData> {
-    const resultPayload = await reduce(this.getFuncNames(), async (accData: IWoolfData, funcName: string) => {
+    return await reduce(this.getFuncNames(), async (accData: IWoolfData, funcName: string) => {
       const context = {
         ...this.getBaseEventContext(),
         funcName,
@@ -78,7 +78,6 @@ export class Job {
       });
       return result;
     }, payload);
-    return resultPayload.data[0]; // FIXME
   }
 
   private async executeFuncWithPaths(funcName: string, data: IWoolfData): Promise<IWoolfData> {
@@ -120,7 +119,7 @@ const defaultJobFuncOption: DefaultJobFuncOption = {
   Handler: 'index.handler',
   InputPath: '$',
   OutputPath: '$',
-  ResultPath: '$.data[0]',
+  ResultPath: '$',
   Role: '-',
   Runtime: 'nodejs8.10',
 };

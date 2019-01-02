@@ -1,8 +1,8 @@
 import { Lamool } from 'lamool/src/lamool';
 import { IWoolfEventHandlers } from '../src/eventHandlers';
-import { IWoolfPayload } from '../src/models';
 import { JobState } from '../src/scheduler/scheduler';
 import { Woolf } from '../src/woolf';
+import { countUpLambdaFunction } from './utils/utils';
 
 interface ICountPayload {
   count: number;
@@ -81,7 +81,7 @@ describe('woolf', () => {
 
   it('handle start and finish events', async () => {
     const jobName = 'test-job';
-    const initialPayload = {data: [{count: 0}]};
+    const initialPayload = {count: 0};
     const expectedResult = {count: 1};
     let startJobEventCBIsCalled = false;
     let finishJobEventCBIsCalled = false;
@@ -125,7 +125,7 @@ describe('woolf', () => {
     };
     woolf.updateEventHandlers(eventHandlers);
     const job = woolf.newJob({name: jobName});
-    await job.addFunc<IWoolfPayload<ICountPayload>, ICountPayload>((event, _, cb) => {cb(null, {count: event.data[0].count+1})}); // FIXME
+    await job.addFunc<ICountPayload>(countUpLambdaFunction); // FIXME
     await woolf.run(initialPayload);
     expect(startEventCBIsCalled).toBeTruthy();
     expect(finishEventCBIsCalled).toBeTruthy();
@@ -157,8 +157,8 @@ describe('woolf', () => {
     let finishFuncEventIsCalled = false;
     const jobName = 'test-job';
     const funcName = 'test-func';
-    const initialPayload = Woolf.dataListToWoolfPayload([{count: 0}]);
-    const expectedResults = {data: [{count: 1}]};
+    const initialPayload = {count: 0};
+    const expectedResults = {count: 1};
     const eventHandlers: Partial<IWoolfEventHandlers> = {
       finishFunc: [(eventType, context) => {
         expect(eventType).toBe('finishFunc');
@@ -181,7 +181,7 @@ describe('woolf', () => {
     };
     woolf.updateEventHandlers(eventHandlers);
     const job = woolf.newJob({name: jobName});
-    await job.addFunc<IWoolfPayload<ICountPayload>, ICountPayload>((e) => {return {count: e.data[0].count+1}}, {FunctionName: funcName}); // tslint:disable-line
+    await job.addFunc<ICountPayload>((e) => {return {count: e.count+1}}, {FunctionName: funcName}); // tslint:disable-line
     await woolf.run(initialPayload);
     expect(finishFuncEventIsCalled).toBeTruthy();
     expect(startFuncEventIsCalled).toBeTruthy();

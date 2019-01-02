@@ -1,8 +1,7 @@
 import { CreateFunctionRequest } from 'aws-sdk/clients/lambda';
 import { Lamool } from 'lamool';
-import { IWoolfPayload } from '../src/models';
 import { Woolf } from '../src/woolf';
-import { LambdaFunction } from 'lamool/src/lambda';
+import { countUpLambdaFunction } from './utils/utils';
 
 const defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {
   Handler: 'index.handler',
@@ -24,11 +23,11 @@ describe('woolf job', () => {
 
   it('execute functions', async () => {
     const job = woolf.newJob({name: 'testJob'});
-    await job.addFunc<IWoolfPayload<ICountPayload>, ICountPayload>((event, _, cb) => {cb(null, {count: event.data[0].count+1})}); // FIXME
-    await job.addFunc<IWoolfPayload<ICountPayload>, ICountPayload>((event, _, cb) => {cb(null, {count: event.data[0].count+1})}); // FIXME
-    await job.addFunc<IWoolfPayload<ICountPayload>, ICountPayload>((event, _, cb) => {cb(null, {count: event.data[0].count+2})}); // FIXME
-    const newData = await job.run(Woolf.dataListToWoolfPayload([{count: 1}])) as {count: number};
-    expect(newData.count).toBe(5);
+    await job.addFunc<ICountPayload>(countUpLambdaFunction);
+    await job.addFunc<ICountPayload>(countUpLambdaFunction);
+    await job.addFunc<ICountPayload>(countUpLambdaFunction);
+    const newData = await job.run({count: 1});
+    expect(newData.count).toBe(4);
   });
 
   it('throw exception if function is failed', async () => {
@@ -48,11 +47,29 @@ describe('paths', () => {
 
   it('handle InputPath', async () => {
     const job = woolf.newJob();
-    const countUpFunc: LambdaFunction<IWoolfPayload<ICountPayload>, ICountPayload> = (event, _, cb) => {cb(null, {count: event.data[0].count+1})};
-    await job.addFunc(countUpFunc, {
+    await job.addFunc(countUpLambdaFunction, {
       InputPath: '$.nest'
     });
-    const result = await job.run({nest:{data: [{count: 0}]}});
+    const result = await job.run({nest:{count: 0}});
     expect(result).toEqual({count: 1});
+  });
+
+
+  it('handle ResultPath', async () => {
+    const job = woolf.newJob();
+    await job.addFunc(countUpLambdaFunction, {
+      ResultPath: '$.result'
+    });
+    const result = await job.run({count: 0});
+    expect(result).toEqual({count: 0, result: {count: 1}});
+  });
+
+  it('handle OutputPath', async () => {
+    const job = woolf.newJob();
+    await job.addFunc(countUpLambdaFunction, {
+      OutputPath: '$.count'
+    });
+    const result = await job.run({count: 0});
+    expect(result).toEqual(1);
   });
 });
