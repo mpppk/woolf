@@ -1,11 +1,10 @@
 import { CreateFunctionRequest } from 'aws-sdk/clients/lambda';
 import { Lamool } from 'lamool';
-import { LambdaFunction } from 'lamool/src/lambda';
 import {forEach} from 'p-iteration';
 import { Job } from '../src/job';
-import { IWoolfPayload } from '../src/models';
 import { JobState, Scheduler } from '../src/scheduler/scheduler';
 import { Woolf } from '../src/woolf';
+import { countUpLambdaFunction } from './utils/utils';
 
 const defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {
   Handler: 'index.handler',
@@ -13,32 +12,19 @@ const defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {
   Runtime: 'nodejs8.10'
 };
 
-
-interface ISleepPayload {
-  sleepTime: number
-}
-
-interface ISleepResult {
-  sleepTime: number;
-}
-
 interface ICountPayload {
   count: number;
 }
 
-const countUpLambdaFunction: LambdaFunction<IWoolfPayload<ICountPayload>, ICountPayload> = (e, _, cb) => {
-  cb(null, {count: e.data.reduce((a, b) => a+b.count, 1)});
-};
-
-const generateAsyncSleepFunc: (time: number) => LambdaFunction<IWoolfPayload<ISleepPayload>, ISleepResult> = (time: number) => {
-  const funcStr = `
-  setTimeout(() => {
-    cb(null, {
-      sleepTime: event.data.reduce((a, b) => a+b.sleepTime, 0) + ${time}
-    })
-  }, ${time});`;
-  return Function('event', 'context', 'cb', funcStr) as LambdaFunction<IWoolfPayload<ISleepPayload>, ISleepResult>;
-};
+// const generateAsyncSleepFunc: (time: number) => LambdaFunction<IWoolfPayload<ISleepPayload>, ISleepResult> = (time: number) => {
+//   const funcStr = `
+//   setTimeout(() => {
+//     cb(null, {
+//       sleepTime: event.data.reduce((a, b) => a+b.sleepTime, 0) + ${time}
+//     })
+//   }, ${time});`;
+//   return Function('event', 'context', 'cb', funcStr) as LambdaFunction<IWoolfPayload<ISleepPayload>, ISleepResult>;
+// };
 
 describe('woolf workflow', () => {
   let lamool = new Lamool();
@@ -56,24 +42,24 @@ describe('woolf workflow', () => {
 
   it('execute serial jobs', async () => {
     const job0 = woolf.newJob();
-    await job0.addFunc<ISleepPayload, ISleepResult>(generateAsyncSleepFunc(10)); // FIXME
+    await job0.addFunc<ICountPayload, ICountPayload>(countUpLambdaFunction);
     const job1 = woolf.newJob();
-    await job1.addFunc<ISleepPayload, ISleepResult>(generateAsyncSleepFunc(20)); // FIXME
+    await job1.addFunc<ICountPayload, ICountPayload>(countUpLambdaFunction);
     woolf.addDependency(job0, job1);
-    const result = (await woolf.run({ data: [{ sleepTime: 0 }] })) as ISleepResult[];
+    const result = (await woolf.run<ICountPayload>({ count: 0 }));
     expect(result).toHaveLength(1);
-    expect(result[0].sleepTime).toBe(30);
+    expect(result[0].count).toBe(2);
   });
 
   it('execute parallel jobs', async () => {
     const job0 = woolf.newJob();
-    await job0.addFunc<ISleepPayload, ISleepResult>(generateAsyncSleepFunc(10)); // FIXME
+    await job0.addFunc<ICountPayload>(countUpLambdaFunction);
     const job1 = woolf.newJob();
-    await job1.addFunc<ISleepPayload, ISleepResult>(generateAsyncSleepFunc(20)); // FIXME
-    const result = (await woolf.run({ data: [{ sleepTime: 0 }] })) as ISleepResult[];
+    await job1.addFunc<ICountPayload>(countUpLambdaFunction);
+    const result = (await woolf.run({count: 0}));
     expect(result).toHaveLength(2);
-    expect(result[0].sleepTime).toBe(10);
-    expect(result[1].sleepTime).toBe(20);
+    expect(result[0].count).toBe(1);
+    expect(result[1].count).toBe(1);
   });
 
   it('execute complexity workflow', async () => {
@@ -106,7 +92,7 @@ describe('woolf workflow', () => {
     woolf.addDependency(jobs[8], jobs[11]);
     woolf.addDependency(jobs[11], jobs[13]);
 
-    const result = (await woolf.run({ data: [{ count: 0 }] })) as ICountPayload[];
+    const result = (await woolf.run({count: 0}));
     expect(result).toHaveLength(1);
     expect(result[0].count).toBe(29);
   });

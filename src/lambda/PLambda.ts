@@ -1,6 +1,6 @@
 import { CreateFunctionRequest, Types } from 'aws-sdk/clients/lambda';
 import { IInvokeParams } from 'lamool/src/lambda';
-import { IWoolfResult } from '../models';
+import { IWoolfData } from '../models';
 import { ILambda } from './ILambda';
 
 export class PLambda {
@@ -16,7 +16,7 @@ export class PLambda {
   };
 
   public async invoke(invokeParams: IInvokeParams) {
-    const result: IWoolfResult = await new Promise((resolve, reject) => {
+    const result: IWoolfData = await new Promise((resolve, reject) => {
       this.lamool.invoke(invokeParams, (err, data) => {
         if (err) {
           reject(err);

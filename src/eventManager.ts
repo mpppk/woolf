@@ -6,7 +6,7 @@ import {
   IWoolfWFEventContext,
   WoolfEventHandler
 } from './eventHandlers';
-import { IWoolfPayload, IWoolfResult } from './models';
+import { IWoolfData } from './models';
 
 const emptyWoolfEventHandlers: IWoolfEventHandlers = {
   addFunc: [],
@@ -25,8 +25,8 @@ type WoolfEventName = keyof IWoolfEventHandlers;
 export class EventManager {
   public static getWFContext(
     workflowName: string,
-    payload: IWoolfPayload,
-    result?: IWoolfResult
+    payload: IWoolfData,
+    result?: IWoolfData
   ): IWoolfWFEventContext {
     return { workflowName, payload, result: result ? result : {} };
   }
@@ -36,8 +36,8 @@ export class EventManager {
   public static getJobContext(
     workflowName: string,
     jobName: string,
-    payload: IWoolfPayload,
-    result?: IWoolfResult
+    payload: IWoolfData,
+    result?: IWoolfData
   ): IWoolfJobEventContext {
     const wfContext = EventManager.getWFContext(workflowName, payload, result);
     return { ...wfContext, jobName };

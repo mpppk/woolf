@@ -5,7 +5,7 @@ import { IWoolfEventHandlers } from './eventHandlers';
 import { EventManager } from './eventManager';
 import { IJobOption, Job } from './job';
 import { ILambda } from './lambda/ILambda';
-import { IWoolfPayload, IWoolfResult } from './models';
+import { IWoolfData } from './models';
 import { IJobStat, Scheduler } from './scheduler/scheduler';
 
 export interface IWoolfOption {
@@ -21,10 +21,6 @@ const defaultCreateFunctionRequest: Pick<CreateFunctionRequest, 'Handler' | 'Rol
 };
 
 export class Woolf {
-  public static dataListToWoolfPayload(dataList: IWoolfResult[]): IWoolfPayload {
-    return {data: dataList};
-  }
-
   private readonly eventManager: EventManager;
   private scheduler = new Scheduler();
   private readonly name: string;
@@ -57,12 +53,12 @@ export class Woolf {
     this.scheduler.addDependency(from, to);
   }
 
-  public async run<T>(initialPayload: IWoolfPayload<T>): Promise<IWoolfResult[]> {
+  public async run<T extends IWoolfData = IWoolfData, U = T>(initialPayload: T): Promise<U[]> {
     const wfContext = EventManager.getWFContext(this.name, initialPayload);
     this.eventManager.dispatchStartEvent(wfContext);
     const initialJobs = this.scheduler.getReadiedJobs().map((jd) => jd[0]);
 
-    const runJob = async (job: Job, payload: IWoolfPayload): Promise<IWoolfResult[]> => {
+    const runJob = async (job: Job, payload: IWoolfData): Promise<IWoolfData[]> => {
       const jobContext = EventManager.getJobContext(this.name, job.name, payload);
       this.eventManager.dispatchStartJobEvent(jobContext);
       const result = await job.run(payload);
@@ -81,16 +77,16 @@ export class Woolf {
         return [];
       }
 
-      const results: IWoolfResult[][] = await map(nextJobAndDataList, async (n) => {
+      const results: IWoolfData[][] = await map(nextJobAndDataList, async (n) => {
         const [j, dataList] = n;
-        return await runJob(j, Woolf.dataListToWoolfPayload(dataList));
+        return await runJob(j, dataList);
       });
 
       return _.flatten(results);
     };
     const r = _.flatten(await map(initialJobs, async (job) => await runJob(job, initialPayload)));
     this.eventManager.dispatchFinishEvent({...wfContext, result: r});
-    return r;
+    return r as U[];
   }
 
   public stats(): IJobStat[] {
