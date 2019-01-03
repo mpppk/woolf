@@ -5,7 +5,7 @@ import { funcToZip } from 'lamool/src/util';
 import { reduce } from 'p-iteration';
 import { IWoolfFuncEventContext } from './eventHandlers';
 import { EventManager } from './eventManager';
-import { mergeByResultPath } from './jobutil';
+import { mergeByResultPath } from './mergeByResultPath';
 import { ILambda } from './lambda/ILambda';
 import { PLambda } from './lambda/PLambda';
 import { IWoolfData } from './models';
