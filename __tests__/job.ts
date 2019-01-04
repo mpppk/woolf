@@ -54,7 +54,6 @@ describe('paths', () => {
     expect(result).toEqual({count: 1});
   });
 
-
   it('handle ResultPath', async () => {
     const job = woolf.newJob();
     await job.addFunc(countUpLambdaFunction, {
@@ -71,5 +70,28 @@ describe('paths', () => {
     });
     const result = await job.run({count: 0});
     expect(result).toEqual(1);
+  });
+});
+
+describe('Parameters', () => {
+  const lamool = new Lamool();
+  const woolf = new Woolf(lamool, {name: 'woolf', defaultCreateFunctionRequest});
+
+  it('add properties to payload', async () => {
+    const job = woolf.newJob();
+    await job.addFunc(countUpLambdaFunction, {
+      Parameters: {count: 1},
+    });
+    const result = await job.run({});
+    expect(result).toEqual({count: 2});
+  });
+
+  it('overwrite original payload', async () => {
+    const job = woolf.newJob();
+    await job.addFunc(countUpLambdaFunction, {
+      Parameters: {count: 1},
+    });
+    const result = await job.run({count: 0});
+    expect(result).toEqual({count: 2});
   });
 });

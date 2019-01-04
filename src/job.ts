@@ -5,10 +5,11 @@ import { funcToZip } from 'lamool/src/util';
 import { reduce } from 'p-iteration';
 import { IWoolfFuncEventContext } from './eventHandlers';
 import { EventManager } from './eventManager';
-import { mergeByResultPath } from './mergeByResultPath';
 import { ILambda } from './lambda/ILambda';
 import { PLambda } from './lambda/PLambda';
+import { mergeByResultPath } from './mergeByResultPath';
 import { IWoolfData } from './models';
+import { applyParameters } from './applyParameters';
 
 export interface IJobOption {
   name: string;
@@ -20,10 +21,11 @@ export interface IJobFuncOption extends CreateFunctionRequest {
   InputPath: string,
   ResultPath: string,
   OutputPath: string,
+  Parameters: {[k: string]: any},
 }
 
 export type DefaultJobFuncOption =
-  Pick<IJobFuncOption, 'Handler' | 'Role' | 'Runtime' | 'InputPath' | 'ResultPath' | 'OutputPath'>
+  Pick<IJobFuncOption, 'Handler' | 'Role' | 'Runtime' | 'InputPath' | 'ResultPath' | 'OutputPath' | 'Parameters'>
 
 export class Job {
   public name: string;
@@ -85,22 +87,28 @@ export class Job {
     if (!funcOpt) {
       throw new Error('func option not found. function name: ' + funcName);
     }
-    const filteredPayloads = jp.query(data, funcOpt.InputPath);
-    if (filteredPayloads.length <= 0) {
-      throw new Error(`invalid InputPath(${funcOpt.InputPath}): payload: ${data}`);
+    const filteredByInputPathPayload = queryByJsonPath(data, funcOpt.InputPath);
+    if (filteredByInputPathPayload === null) {
+      throw new Error(`invalid InputPath(${funcOpt.InputPath}): original payload: ${data}`);
     }
-    const filteredPayload = filteredPayloads[0];
+
+    const payload = applyParameters(filteredByInputPathPayload, funcOpt.Parameters);
+
     let result: IWoolfData;
     try {
       result = await this.plambda.invoke({
         FunctionName: funcName,
-        Payload: JSON.stringify(filteredPayload),
+        Payload: JSON.stringify(payload),
       });
     } catch (e) {
       throw new Error(`failed to execute function: currentData: ${JSON.stringify(data)}, funcName: ${funcName},  registered functions: ${this.getFuncNames()}, ${e.message}`);
     }
-    const mergedResult = mergeByResultPath(filteredPayload, result, funcOpt.ResultPath);
-    return jp.query(mergedResult, funcOpt.OutputPath)[0];
+    const mergedResult = mergeByResultPath(payload, result, funcOpt.ResultPath);
+    const output = queryByJsonPath(mergedResult, funcOpt.OutputPath);
+    if (output === null) {
+      throw new Error(`invalid OutputPath(${funcOpt.OutputPath}): original data: ${data}`);
+    }
+    return output;
   }
 
   private getBaseEventContext(): Pick<IWoolfFuncEventContext, 'jobName' | 'workflowName'> {
@@ -115,10 +123,19 @@ export class Job {
   }
 }
 
+const queryByJsonPath = (data: any, query: string): any | null => {
+  const results = jp.query(data, query);
+  if (results.length <= 0) {
+    return null;
+  }
+  return results[0];
+};
+
 const defaultJobFuncOption: DefaultJobFuncOption = {
   Handler: 'index.handler',
   InputPath: '$',
   OutputPath: '$',
+  Parameters: {},
   ResultPath: '$',
   Role: '-',
   Runtime: 'nodejs8.10',
