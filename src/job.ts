@@ -1,15 +1,15 @@
 import { CreateFunctionRequest, FunctionConfiguration } from 'aws-sdk/clients/lambda';
 import * as jp from 'jsonpath';
-import { LambdaFunction } from 'lamool/src/lambda';
+import { IPayload, LambdaFunction } from 'lamool/src/lambda';
 import { funcToZip } from 'lamool/src/util';
 import { reduce } from 'p-iteration';
+import { applyParameters } from './applyParameters';
 import { IWoolfFuncEventContext } from './eventHandlers';
 import { EventManager } from './eventManager';
 import { ILambda } from './lambda/ILambda';
 import { PLambda } from './lambda/PLambda';
 import { mergeByResultPath } from './mergeByResultPath';
 import { IWoolfData } from './models';
-import { applyParameters } from './applyParameters';
 
 export interface IJobOption {
   name: string;
@@ -82,7 +82,7 @@ export class Job {
     }, payload);
   }
 
-  private async executeFuncWithPaths(funcName: string, data: IWoolfData): Promise<IWoolfData> {
+  private async executeFuncWithPaths(funcName: string, data: IWoolfData | IWoolfData[]): Promise<IWoolfData> {
     const funcOpt = this.funcOptions.get(funcName);
     if (!funcOpt) {
       throw new Error('func option not found. function name: ' + funcName);
@@ -92,21 +92,21 @@ export class Job {
       throw new Error(`invalid InputPath(${funcOpt.InputPath}): original payload: ${data}`);
     }
 
-    const payload = applyParameters(filteredByInputPathPayload, funcOpt.Parameters);
+    const parameterAppliedPayload = applyParameters(filteredByInputPathPayload, funcOpt.Parameters);
 
     let result: IWoolfData;
     try {
       result = await this.plambda.invoke({
         FunctionName: funcName,
-        Payload: JSON.stringify(payload),
+        Payload: JSON.stringify(parameterAppliedPayload),
       });
     } catch (e) {
       throw new Error(`failed to execute function: currentData: ${JSON.stringify(data)}, funcName: ${funcName},  registered functions: ${this.getFuncNames()}, ${e.message}`);
     }
-    const mergedResult = mergeByResultPath(payload, result, funcOpt.ResultPath);
+    const mergedResult = mergeByResultPath(parameterAppliedPayload, result, funcOpt.ResultPath);
     const output = queryByJsonPath(mergedResult, funcOpt.OutputPath);
     if (output === null) {
-      throw new Error(`invalid OutputPath(${funcOpt.OutputPath}): original data: ${data}`);
+      throw new Error(`invalid OutputPath(${funcOpt.OutputPath}): original payloads: ${mergedResult}`);
     }
     return output;
   }
@@ -123,7 +123,7 @@ export class Job {
   }
 }
 
-const queryByJsonPath = (data: any, query: string): any | null => {
+const queryByJsonPath = (data: IPayload | IPayload[], query: string): any | null => {
   const results = jp.query(data, query);
   if (results.length <= 0) {
     return null;
