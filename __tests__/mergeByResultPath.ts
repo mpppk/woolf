@@ -5,7 +5,7 @@ import {
   mergeByResultPath,
   parseIndexSignature,
   parseReferencePath
-} from '../src/jobutil';
+} from '../src/mergeByResultPath';
 
 describe('parseReferencePath', () => {
   it('can parse reference path', async () => {
