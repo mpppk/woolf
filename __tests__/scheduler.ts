@@ -1,6 +1,6 @@
 import { Lamool } from 'lamool';
 import { Job } from '../src/job';
-import { JobState, Scheduler } from '../src/scheduler/scheduler';
+import { IJobStat, JobState, Scheduler } from '../src/scheduler/scheduler';
 import { countUpLambdaFunction } from './utils/utils';
 
 // const generateAsyncSleepFunc: (time: number) => LambdaFunction<IWoolfPayload<ISleepPayload>, ISleepResult> = (time: number) => {
@@ -61,19 +61,17 @@ describe('scheduler', () => {
     scheduler.addJob(job1);
     scheduler.addDependency(job0, job1);
 
-    const statsSummary1 = scheduler.stats().map(s => ({id: s.job.id, state: s.state, waitingJobIDs: s.waitingJobIDs}));
-    const expectedStats1 = [
-      {id: 0, state: JobState.Ready, waitingJobIDs: []},
-      {id: 1, state: JobState.Suspend, waitingJobIDs: [0]},
+    const expectedStats1: IJobStat[] = [
+      {id: 0, name: 'job0', state: JobState.Ready, toJobIDs: [1], fromJobIDs: []},
+      {id: 1, name: 'job1', state: JobState.Suspend, toJobIDs: [], fromJobIDs: [0]},
     ];
-    expect(statsSummary1).toEqual(expect.arrayContaining(expectedStats1));
+    expect(scheduler.stats()).toEqual(expect.arrayContaining(expectedStats1));
 
     scheduler.doneJob(job0, {});
-    const statsSummary2 = scheduler.stats().map(s => ({id: s.job.id, state: s.state}));
-    const expectedStats2 = [
-      {id: 0, state: JobState.Done},
-      {id: 1, state: JobState.Ready},
+    const expectedStats2: IJobStat[] = [
+      {id: 0, name: 'job0', state: JobState.Done, toJobIDs: [1], fromJobIDs: []},
+      {id: 1, name: 'job1', state: JobState.Ready, toJobIDs: [], fromJobIDs: [0]},
     ];
-    expect(statsSummary2).toEqual(expect.arrayContaining(expectedStats2))
+    expect(scheduler.stats()).toEqual(expect.arrayContaining(expectedStats2))
   });
 });
