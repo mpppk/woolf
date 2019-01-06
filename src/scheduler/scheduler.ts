@@ -12,9 +12,11 @@ export enum JobState {
 }
 
 export interface IJobStat {
-  job: Job,
+  id: number,
+  name: string,
   state: JobState,
-  waitingJobIDs: number[],
+  toJobIDs: number[],
+  fromJobIDs: number[],
 }
 
 export class Scheduler {
@@ -101,11 +103,17 @@ export class Scheduler {
   }
 
   public stats(): IJobStat[] {
-    return this.graph.getNodes().map((job) => ({
-      job,
+    return this.graph.getNodes().map(this.getJobStat.bind(this));
+  }
+
+  private getJobStat(job: Job): IJobStat {
+    return {
+      fromJobIDs: this.graph.getFromNodes(job).map((j) => j.id),
+      id: job.id,
+      name: job.name,
       state: this.getJobState(job),
-      waitingJobIDs: this.graph.getFromNodes(job).map((j) => j.id),
-    }));
+      toJobIDs: this.graph.getToNodes(job).map((j) => j.id),
+    };
   }
 
   private getDataListForJob(job: Job): IWoolfData[] {

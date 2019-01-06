@@ -103,7 +103,7 @@ describe('woolf', () => {
         expect(context.payload).toEqual(initialPayload);
         expect(context.result).toEqual(expectedResult);
         expect(context.nextJobs).toHaveLength(0);
-        const statsSummary = context.stats.map(s => ({id: s.job.id, state: s.state}));
+        const statsSummary = context.stats.map(s => ({id: s.id, state: s.state}));
         expect(statsSummary).toEqual(expect.arrayContaining([{id: 0, state: JobState.Done}]));
         startJobEventCBIsCalled = true;
       }],
