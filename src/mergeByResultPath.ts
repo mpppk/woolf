@@ -1,4 +1,5 @@
-import * as jp from 'jsonpath';
+// @ts-ignore
+import jp = require('jsonpath/jsonpath.min');
 import * as _ from 'lodash';
 import { IWoolfData } from './models';
 

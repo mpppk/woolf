@@ -1,4 +1,5 @@
-import * as jp from 'jsonpath';
+// @ts-ignore
+import jp = require('jsonpath/jsonpath.min');
 import { IWoolfData } from './models';
 
 export const applyParameters = (data: any, parameters: IWoolfData): any => {
