@@ -1,6 +1,6 @@
 {
   "name": "woolf",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Universal workflow engine on lamool",
   "main": "src/index.js",
   "scripts": {
@@ -17,8 +17,8 @@
     "prepare": "npm run clean && npm run build"
   },
   "files": [
-    "src/*.js",
-    "src/*.ts"
+    "src/**/*.js",
+    "src/**/*.ts"
   ],
   "types": "src/index.d.ts",
   "keywords": [
