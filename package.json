@@ -13,20 +13,30 @@
     "doc": "typedoc --out ./docs -m \"umd\"",
     "lint": "npm run pretty-quick && tslint -c tslint.json 'src/**/*.ts' 'src/**/*.tsx' 'test/**/*.ts' --fix",
     "pretty-quick": "pretty-quick",
-    "precommit": "pretty-quick --staged"
+    "precommit": "pretty-quick --staged",
+    "prepare": "npm run clean && npm run build"
   },
   "files": [
-    "src/woolf.js"
+    "src/*.js",
+    "src/*.ts"
   ],
   "types": "src/index.d.ts",
-  "keywords": [],
+  "keywords": [
+    "aws",
+    "lambda",
+    "universal",
+    "isomorphic",
+    "workflow"
+  ],
   "author": "mpppk",
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^23.3.8",
     "@types/jsonpath": "^0.2.0",
+    "@types/jszip": "^3.1.4",
     "@types/lodash": "^4.14.119",
     "@types/node": "^10.0.3",
+    "@types/workerpool": "^2.3.0",
     "codecov": "^3.1.0",
     "husky": "^1.0.0",
     "jest": "^23.6.0",
