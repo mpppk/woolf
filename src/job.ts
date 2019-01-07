@@ -1,5 +1,6 @@
 import { CreateFunctionRequest, FunctionConfiguration } from 'aws-sdk/clients/lambda';
-import * as jp from 'jsonpath';
+// @ts-ignore
+import jp = require('jsonpath/jsonpath.min');
 import { IPayload, LambdaFunction } from 'lamool/src/lambda';
 import { funcToZip } from 'lamool/src/util';
 import { reduce } from 'p-iteration';
