@@ -1,6 +1,7 @@
 import { AWSError } from 'aws-sdk';
 import { CreateFunctionRequest, Types } from 'aws-sdk/clients/lambda';
-import { Callback, IInvokeParams, InvokeCallback } from 'lamool/src/lambda';
+import * as Lambda from 'aws-sdk/clients/lambda';
+import { Callback, IInvokeParams, InvokeCallback, ListFunctionsCallback } from 'lamool/src/lambda';
 import { ILambda } from './ILambda';
 
 export class MemoizableLambda implements ILambda{
@@ -27,5 +28,9 @@ export class MemoizableLambda implements ILambda{
       callback(err, data);
     };
     this.lambda.invoke(params, callbackProxy);
+  }
+
+  public listFunctions(params: Lambda.ListFunctionsRequest, callback: ListFunctionsCallback): void {
+    this.lambda.listFunctions(params, callback);
   }
 }
