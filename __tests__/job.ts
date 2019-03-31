@@ -6,7 +6,7 @@ import { countUpLambdaFunction } from './utils/utils';
 const defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {
   Handler: 'index.handler',
   Role: '-',
-  Runtime: 'nodejs8.10',
+  Runtime: 'nodejs8.10'
 };
 
 interface ICountPayload {
@@ -15,31 +15,37 @@ interface ICountPayload {
 
 describe('woolf job', () => {
   const lamool = new Lamool();
-  const woolf = new Woolf(lamool, {name: 'woolf', defaultCreateFunctionRequest});
+  const woolf = new Woolf(lamool, { name: 'woolf', defaultCreateFunctionRequest });
 
   afterAll(async () => {
+    console.log('start job lamool terminating...');
     await lamool.terminate(true);
+    console.log('finish job lamool terminating...');
   });
 
   it('execute functions', async () => {
-    const job = woolf.newJob({name: 'testJob'});
+    const job = woolf.newJob({ name: 'testJob' });
     await job.addFunc<ICountPayload>(countUpLambdaFunction);
     await job.addFunc<ICountPayload>(countUpLambdaFunction);
     await job.addFunc<ICountPayload>(countUpLambdaFunction);
-    const newData = await job.run({count: 1});
+    const newData = await job.run({ count: 1 });
     expect(newData.count).toBe(4);
   });
 
   it('throw exception if function is failed', async () => {
-    const job = woolf.newJob({name: 'failJob'});
-    await job.addFunc((_e, _c, cb) => {cb(new Error('error'), null)}); // FIXME
-    await expect(job.run({data: []})).rejects.toThrow('failed to execute function: currentData: {"data":[]}, funcName: failJob-function0,  registered functions: failJob-function0, Handled error type:Error message:error'); // FIXME message undefined
+    const job = woolf.newJob({ name: 'failJob' });
+    await job.addFunc((_e, _c, cb) => {
+      cb(new Error('error'), null);
+    }); // FIXME
+    await expect(job.run({ data: [] })).rejects.toThrow(
+      'failed to execute function: currentData: {"data":[]}, funcName: failJob-function0,  registered functions: failJob-function0, Handled error type:Error message:error'
+    ); // FIXME message undefined
   });
 });
 
 describe('paths', () => {
   const lamool = new Lamool();
-  const woolf = new Woolf(lamool, {name: 'woolf', defaultCreateFunctionRequest});
+  const woolf = new Woolf(lamool, { name: 'woolf', defaultCreateFunctionRequest });
 
   afterAll(async () => {
     await lamool.terminate(true);
@@ -50,8 +56,8 @@ describe('paths', () => {
     await job.addFunc(countUpLambdaFunction, {
       InputPath: '$.nest'
     });
-    const result = await job.run({nest:{count: 0}});
-    expect(result).toEqual({count: 1});
+    const result = await job.run({ nest: { count: 0 } });
+    expect(result).toEqual({ count: 1 });
   });
 
   it('handle ResultPath', async () => {
@@ -59,8 +65,8 @@ describe('paths', () => {
     await job.addFunc(countUpLambdaFunction, {
       ResultPath: '$.result'
     });
-    const result = await job.run({count: 0});
-    expect(result).toEqual({count: 0, result: {count: 1}});
+    const result = await job.run({ count: 0 });
+    expect(result).toEqual({ count: 0, result: { count: 1 } });
   });
 
   it('handle OutputPath', async () => {
@@ -68,30 +74,30 @@ describe('paths', () => {
     await job.addFunc(countUpLambdaFunction, {
       OutputPath: '$.count'
     });
-    const result = await job.run({count: 0});
+    const result = await job.run({ count: 0 });
     expect(result).toEqual(1);
   });
 });
 
 describe('Parameters', () => {
   const lamool = new Lamool();
-  const woolf = new Woolf(lamool, {name: 'woolf', defaultCreateFunctionRequest});
+  const woolf = new Woolf(lamool, { name: 'woolf', defaultCreateFunctionRequest });
 
   it('add properties to payload', async () => {
     const job = woolf.newJob();
     await job.addFunc(countUpLambdaFunction, {
-      Parameters: {count: 1},
+      Parameters: { count: 1 }
     });
     const result = await job.run({});
-    expect(result).toEqual({count: 2});
+    expect(result).toEqual({ count: 2 });
   });
 
   it('overwrite original payload', async () => {
     const job = woolf.newJob();
     await job.addFunc(countUpLambdaFunction, {
-      Parameters: {count: 1},
+      Parameters: { count: 1 }
     });
-    const result = await job.run({count: 0});
-    expect(result).toEqual({count: 2});
+    const result = await job.run({ count: 0 });
+    expect(result).toEqual({ count: 2 });
   });
 });
