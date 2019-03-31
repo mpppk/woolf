@@ -24,7 +24,9 @@ describe('scheduler', () => {
   });
 
   afterAll(async () => {
+    console.log('start scheduler lamool terminating...');
     lamool.terminate(true);
+    console.log('finish scheduler lamool terminating');
   });
 
   it('handle job status', async () => {
@@ -62,16 +64,16 @@ describe('scheduler', () => {
     scheduler.addDependency(job0, job1);
 
     const expectedStats1: IJobStat[] = [
-      {id: 0, name: 'job0', state: JobState.Ready, toJobIDs: [1], fromJobIDs: []},
-      {id: 1, name: 'job1', state: JobState.Suspend, toJobIDs: [], fromJobIDs: [0]},
+      { id: 0, name: 'job0', state: JobState.Ready, toJobIDs: [1], fromJobIDs: [] },
+      { id: 1, name: 'job1', state: JobState.Suspend, toJobIDs: [], fromJobIDs: [0] }
     ];
     expect(scheduler.stats()).toEqual(expect.arrayContaining(expectedStats1));
 
     scheduler.doneJob(job0, {});
     const expectedStats2: IJobStat[] = [
-      {id: 0, name: 'job0', state: JobState.Done, toJobIDs: [1], fromJobIDs: []},
-      {id: 1, name: 'job1', state: JobState.Ready, toJobIDs: [], fromJobIDs: [0]},
+      { id: 0, name: 'job0', state: JobState.Done, toJobIDs: [1], fromJobIDs: [] },
+      { id: 1, name: 'job1', state: JobState.Ready, toJobIDs: [], fromJobIDs: [0] }
     ];
-    expect(scheduler.stats()).toEqual(expect.arrayContaining(expectedStats2))
+    expect(scheduler.stats()).toEqual(expect.arrayContaining(expectedStats2));
   });
 });
