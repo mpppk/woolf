@@ -18,9 +18,7 @@ describe('woolf job', () => {
   const woolf = new Woolf(lamool, { name: 'woolf', defaultCreateFunctionRequest });
 
   afterAll(async () => {
-    console.log('start job lamool terminating...');
     await lamool.terminate(true);
-    console.log('finish job lamool terminating...');
   });
 
   it('execute functions', async () => {

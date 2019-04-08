@@ -24,9 +24,7 @@ describe('scheduler', () => {
   });
 
   afterAll(async () => {
-    console.log('start scheduler lamool terminating...');
     lamool.terminate(true);
-    console.log('finish scheduler lamool terminating');
   });
 
   it('handle job status', async () => {

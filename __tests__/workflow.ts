@@ -18,9 +18,7 @@ describe('woolf workflow', () => {
   });
 
   afterAll(async () => {
-    console.log('start workflow lamool terminating...');
     await lamool.terminate(true);
-    console.log('finish workflow lamool terminating');
   });
 
   it('execute serial jobs', async () => {
