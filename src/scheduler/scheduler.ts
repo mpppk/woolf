@@ -6,29 +6,34 @@ import { IWoolfData } from '../models';
 import { DAG } from './dag';
 
 export enum JobState {
+  Processing = 'PROCESSING',
   Done = 'DONE',
   Ready = 'READY',
-  Suspend = 'SUSPEND',
+  Suspend = 'SUSPEND'
 }
 
 export interface IJobStat {
-  id: number,
-  name: string,
-  state: JobState,
-  toJobIDs: number[],
-  fromJobIDs: number[],
+  id: number;
+  name: string;
+  state: JobState;
+  toJobIDs: number[];
+  fromJobIDs: number[];
 }
 
 export class Scheduler {
   private graph = new DAG<Job>();
   private doneJobs: Map<number, IWoolfData> = new Map();
+  private processingJobIDs: number[] = [];
 
   public addJob(job: Job) {
     this.graph.addNode(job);
   }
 
-  public newJob(lambda: ILambda, defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {},
-                jobOpt: Partial<IJobOption> = {}) {
+  public newJob(
+    lambda: ILambda,
+    defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {},
+    jobOpt: Partial<IJobOption> = {}
+  ) {
     const job = new Job(this.graph.getNewID(), lambda, defaultCreateFunctionRequest, jobOpt);
     this.addJob(job);
     return job;
@@ -38,10 +43,16 @@ export class Scheduler {
     this.graph.addEdge(from, to);
   }
 
+  public startJob(job: Job) {
+    this.processingJobIDs.push(job.id);
+  }
+
   public doneJob(job: Job, result: IWoolfData): Array<[Job, IWoolfData[]]> {
+    this.processingJobIDs = this.processingJobIDs.filter(id => id !== job.id);
     this.doneJobs.set(job.id, result);
-    const nextJobs = this.graph.getToNodes(job)
-      .filter((djob) => !this.doneJobs.has(djob.id))
+    const nextJobs = this.graph
+      .getToNodes(job)
+      .filter(djob => !this.doneJobs.has(djob.id))
       .filter(this.isReadiedJob.bind(this));
     const dataList: IWoolfData[][] = nextJobs.map(this.getDataListForJob.bind(this));
     return _.zip(nextJobs, dataList) as Array<[Job, IWoolfData[]]>;
@@ -52,13 +63,13 @@ export class Scheduler {
       return false;
     }
     const fromJobs = this.graph.getFromNodes(job);
-    return fromJobs.every((dependencyJob) => this.doneJobs.has(dependencyJob.id));
+    return fromJobs.every(dependencyJob => this.doneJobs.has(dependencyJob.id));
   }
 
   public getReadiedJobs(): Array<[Job, IWoolfData[]]> {
-      const readiedJobs = this.graph.getNodes().filter(this.isReadiedJob.bind(this));
-      const dataList = readiedJobs.map(this.getDataListForJob.bind(this));
-      return _.zip(readiedJobs, dataList) as Array<[Job, IWoolfData[]]>;
+    const readiedJobs = this.graph.getNodes().filter(this.isReadiedJob.bind(this));
+    const dataList = readiedJobs.map(this.getDataListForJob.bind(this));
+    return _.zip(readiedJobs, dataList) as Array<[Job, IWoolfData[]]>;
   }
 
   public isSuspendedJob(job: Job): boolean {
@@ -70,9 +81,7 @@ export class Scheduler {
     const doneJobIDs = Array.from(this.doneJobs.keys());
     const readiedJobIDs = this.getReadiedJobs().map(d => d[0].id);
     const suspendedJobIDs = _.difference(_.difference(jobIDs, doneJobIDs), readiedJobIDs);
-    return suspendedJobIDs
-      .map((id) => this.graph.getNode(id))
-      .filter(job => job) as Job[];
+    return suspendedJobIDs.map(id => this.graph.getNode(id)).filter(job => job) as Job[];
   }
 
   public isDoneJob(job: Job): boolean {
@@ -81,7 +90,7 @@ export class Scheduler {
 
   public getDoneJobs(): Job[] {
     return Array.from(this.doneJobs.keys())
-      .map((id) => this.graph.getNode(id))
+      .map(id => this.graph.getNode(id))
       .filter(job => job) as Job[];
   }
 
@@ -90,6 +99,10 @@ export class Scheduler {
   }
 
   public getJobState(job: Job): JobState {
+    if (this.processingJobIDs.find(id => id === job.id) !== undefined) {
+      return JobState.Processing;
+    }
+
     if (this.isDoneJob(job)) {
       return JobState.Done;
     }
@@ -108,17 +121,18 @@ export class Scheduler {
 
   private getJobStat(job: Job): IJobStat {
     return {
-      fromJobIDs: this.graph.getFromNodes(job).map((j) => j.id),
+      fromJobIDs: this.graph.getFromNodes(job).map(j => j.id),
       id: job.id,
       name: job.name,
       state: this.getJobState(job),
-      toJobIDs: this.graph.getToNodes(job).map((j) => j.id),
+      toJobIDs: this.graph.getToNodes(job).map(j => j.id)
     };
   }
 
   private getDataListForJob(job: Job): IWoolfData[] {
-    return this.graph.getFromNodes(job)
-      .map((fromJob) => this.doneJobs.get(fromJob.id))
-      .map((dl) => dl ? dl : []);
+    return this.graph
+      .getFromNodes(job)
+      .map(fromJob => this.doneJobs.get(fromJob.id))
+      .map(dl => (dl ? dl : []));
   }
 }
