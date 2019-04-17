@@ -67,11 +67,18 @@ describe('scheduler', () => {
     ];
     expect(scheduler.stats()).toEqual(expect.arrayContaining(expectedStats1));
 
-    scheduler.doneJob(job0, {});
+    scheduler.startJob(job0);
     const expectedStats2: IJobStat[] = [
+      { id: 0, name: 'job0', state: JobState.Processing, toJobIDs: [1], fromJobIDs: [] },
+      { id: 1, name: 'job1', state: JobState.Suspend, toJobIDs: [], fromJobIDs: [0] }
+    ];
+    expect(scheduler.stats()).toEqual(expect.arrayContaining(expectedStats2));
+
+    scheduler.doneJob(job0, {});
+    const expectedStats3: IJobStat[] = [
       { id: 0, name: 'job0', state: JobState.Done, toJobIDs: [1], fromJobIDs: [] },
       { id: 1, name: 'job1', state: JobState.Ready, toJobIDs: [], fromJobIDs: [0] }
     ];
-    expect(scheduler.stats()).toEqual(expect.arrayContaining(expectedStats2));
+    expect(scheduler.stats()).toEqual(expect.arrayContaining(expectedStats3));
   });
 });
