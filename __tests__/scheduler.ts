@@ -1,7 +1,7 @@
 import { Lamool } from 'lamool';
-import { Job, JobFuncStat, JobFuncState } from '../src/job';
+import { Job, JobFuncStat } from '../src/job';
 import { IJobStat, JobState, Scheduler } from '../src/scheduler/scheduler';
-import { countUpLambdaFunction } from './utils/utils';
+import { countUpLambdaFunction, generateDefaultFuncStat } from './utils/utils';
 
 // const generateAsyncSleepFunc: (time: number) => LambdaFunction<IWoolfPayload<ISleepPayload>, ISleepResult> = (time: number) => {
 //   const funcStr = `
@@ -12,20 +12,6 @@ import { countUpLambdaFunction } from './utils/utils';
 //   }, ${time});`;
 //   return Function('event', 'context', 'cb', funcStr) as LambdaFunction<IWoolfPayload<ISleepPayload>, ISleepResult>;
 // };
-
-const generateDefaultFuncStat = (): JobFuncStat => {
-  return {
-    FunctionName: 'job0-function0',
-    Handler: 'index.handler',
-    InputPath: '$',
-    OutputPath: '$',
-    Parameters: {},
-    ResultPath: '$',
-    Role: '-',
-    Runtime: 'nodejs8.10',
-    state: JobFuncState.Ready
-  };
-};
 
 describe('scheduler', () => {
   let scheduler = new Scheduler();

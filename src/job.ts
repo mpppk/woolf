@@ -177,7 +177,7 @@ export class Job {
 
     this.funcInfoMap.set(funcName, {
       ...funcInfo,
-      state: JobFuncState.Processing
+      state: newState
     });
   }
 }
