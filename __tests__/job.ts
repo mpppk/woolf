@@ -1,7 +1,8 @@
 import { CreateFunctionRequest } from 'aws-sdk/clients/lambda';
 import { Lamool } from 'lamool';
+import { JobFuncStat, JobFuncState } from '../src/job';
 import { Woolf } from '../src/woolf';
-import { countUpLambdaFunction } from './utils/utils';
+import { countUpLambdaFunction, generateDefaultFuncStat } from './utils/utils';
 
 const defaultCreateFunctionRequest: Partial<CreateFunctionRequest> = {
   Handler: 'index.handler',
@@ -97,5 +98,58 @@ describe('Parameters', () => {
     });
     const result = await job.run({ count: 0 });
     expect(result).toEqual({ count: 2 });
+  });
+});
+
+describe('stats', () => {
+  const lamool = new Lamool();
+  const woolf = new Woolf(lamool, { name: 'woolf', defaultCreateFunctionRequest });
+  const woolf2 = new Woolf(lamool, { name: 'woolf', defaultCreateFunctionRequest });
+
+  afterAll(async () => {
+    await lamool.terminate(true);
+  });
+
+  it('provide func name', async () => {
+    const expectedJobName = 'test-job';
+    const job = woolf2.newJob({
+      name: expectedJobName
+    });
+    const expectedFunctionName = 'test-name';
+    await job.addFunc(countUpLambdaFunction, {
+      FunctionName: expectedFunctionName,
+      Parameters: { count: 1 }
+    });
+
+    const expectedStat = {
+      ...generateDefaultFuncStat(),
+      FunctionName: `${expectedJobName}-${expectedFunctionName}`,
+      Parameters: { count: 1 }
+    };
+    const stat = job.getFuncStats()[0];
+    expect(stat).toEqual(expectedStat);
+  });
+
+  it('update func state', async () => {
+    const job = woolf.newJob();
+    await job.addFunc(countUpLambdaFunction, {
+      Parameters: { count: 1 }
+    });
+
+    const expectedStat1: JobFuncStat = {
+      ...generateDefaultFuncStat(),
+      Parameters: { count: 1 }
+    };
+    const stat = job.getFuncStats()[0];
+    expect(stat).toEqual(expectedStat1);
+
+    await job.run({});
+    const expectedStat2: JobFuncStat = {
+      ...generateDefaultFuncStat(),
+      Parameters: { count: 1 },
+      state: JobFuncState.Done
+    };
+    const stat2 = job.getFuncStats()[0];
+    expect(stat2).toEqual(expectedStat2);
   });
 });

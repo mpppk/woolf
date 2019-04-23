@@ -1,7 +1,7 @@
 import { Lamool } from 'lamool';
-import { Job } from '../src/job';
+import { Job, JobFuncStat } from '../src/job';
 import { IJobStat, JobState, Scheduler } from '../src/scheduler/scheduler';
-import { countUpLambdaFunction } from './utils/utils';
+import { countUpLambdaFunction, generateDefaultFuncStat } from './utils/utils';
 
 // const generateAsyncSleepFunc: (time: number) => LambdaFunction<IWoolfPayload<ISleepPayload>, ISleepResult> = (time: number) => {
 //   const funcStr = `
@@ -61,23 +61,44 @@ describe('scheduler', () => {
     scheduler.addJob(job1);
     scheduler.addDependency(job0, job1);
 
+    const expectedFuncStats1ForJob0: JobFuncStat[] = [
+      {
+        ...generateDefaultFuncStat(),
+        FunctionName: 'job0-function0'
+      }
+    ];
+    const expectedFuncStats1ForJob1: JobFuncStat[] = [
+      {
+        ...generateDefaultFuncStat(),
+        FunctionName: 'job1-function0'
+      }
+    ];
+
     const expectedStats1: IJobStat[] = [
-      { id: 0, name: 'job0', state: JobState.Ready, toJobIDs: [1], fromJobIDs: [] },
-      { id: 1, name: 'job1', state: JobState.Suspend, toJobIDs: [], fromJobIDs: [0] }
+      { funcs: expectedFuncStats1ForJob0, id: 0, name: 'job0', state: JobState.Ready, toJobIDs: [1], fromJobIDs: [] },
+      { funcs: expectedFuncStats1ForJob1, id: 1, name: 'job1', state: JobState.Suspend, toJobIDs: [], fromJobIDs: [0] }
     ];
     expect(scheduler.stats()).toEqual(expect.arrayContaining(expectedStats1));
 
     scheduler.startJob(job0);
+
     const expectedStats2: IJobStat[] = [
-      { id: 0, name: 'job0', state: JobState.Processing, toJobIDs: [1], fromJobIDs: [] },
-      { id: 1, name: 'job1', state: JobState.Suspend, toJobIDs: [], fromJobIDs: [0] }
+      {
+        fromJobIDs: [],
+        funcs: expectedFuncStats1ForJob0,
+        id: 0,
+        name: 'job0',
+        state: JobState.Processing,
+        toJobIDs: [1]
+      },
+      { funcs: expectedFuncStats1ForJob1, id: 1, name: 'job1', state: JobState.Suspend, toJobIDs: [], fromJobIDs: [0] }
     ];
     expect(scheduler.stats()).toEqual(expect.arrayContaining(expectedStats2));
 
     scheduler.doneJob(job0, {});
     const expectedStats3: IJobStat[] = [
-      { id: 0, name: 'job0', state: JobState.Done, toJobIDs: [1], fromJobIDs: [] },
-      { id: 1, name: 'job1', state: JobState.Ready, toJobIDs: [], fromJobIDs: [0] }
+      { funcs: expectedFuncStats1ForJob0, id: 0, name: 'job0', state: JobState.Done, toJobIDs: [1], fromJobIDs: [] },
+      { funcs: expectedFuncStats1ForJob1, id: 1, name: 'job1', state: JobState.Ready, toJobIDs: [], fromJobIDs: [0] }
     ];
     expect(scheduler.stats()).toEqual(expect.arrayContaining(expectedStats3));
   });
