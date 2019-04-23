@@ -1,6 +1,6 @@
 import { CreateFunctionRequest } from 'aws-sdk/clients/lambda';
 import * as _ from 'lodash';
-import { IJobOption, Job } from '../job';
+import { IJobOption, Job, JobFuncStat } from '../job';
 import { ILambda } from '../lambda/ILambda';
 import { IWoolfData } from '../models';
 import { DAG } from './dag';
@@ -13,6 +13,7 @@ export enum JobState {
 }
 
 export interface IJobStat {
+  funcs: JobFuncStat[];
   id: number;
   name: string;
   state: JobState;
@@ -122,6 +123,7 @@ export class Scheduler {
   private getJobStat(job: Job): IJobStat {
     return {
       fromJobIDs: this.graph.getFromNodes(job).map(j => j.id),
+      funcs: job.getFuncStats(),
       id: job.id,
       name: job.name,
       state: this.getJobState(job),
