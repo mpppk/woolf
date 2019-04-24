@@ -92,18 +92,20 @@ export class Job {
     return await reduce(
       this.getFuncNames(),
       async (accData: IWoolfData, funcName: string) => {
-        const context = {
+        this.updateFuncState(funcName, JobFuncState.Processing);
+        const context: IWoolfFuncEventContext = {
           ...this.getBaseEventContext(),
           funcName,
+          funcStats: this.getFuncStats(),
           payload: accData,
           result: {}
         };
         this.eventManager.dispatchStartFuncEvent(context);
-        this.updateFuncState(funcName, JobFuncState.Processing);
         const result = await this.executeFuncWithPaths(funcName, accData);
         this.updateFuncState(funcName, JobFuncState.Done);
         this.eventManager.dispatchFinishFuncEvent({
           ...context,
+          funcStats: this.getFuncStats(),
           result
         });
         return result;
