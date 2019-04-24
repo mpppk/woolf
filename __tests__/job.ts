@@ -1,6 +1,6 @@
 import { CreateFunctionRequest } from 'aws-sdk/clients/lambda';
 import { Lamool } from 'lamool';
-import { JobFuncStat, JobFuncState } from '../src/job';
+import { Job, JobFuncStat, JobFuncState } from '../src/job';
 import { Woolf } from '../src/woolf';
 import { countUpLambdaFunction, generateDefaultFuncStat } from './utils/utils';
 
@@ -151,5 +151,39 @@ describe('stats', () => {
     };
     const stat2 = job.getFuncStats()[0];
     expect(stat2).toEqual(expectedStat2);
+  });
+});
+
+describe('EventManager', () => {
+  const lamool = new Lamool();
+  const woolf = new Woolf(lamool, { name: 'woolf', defaultCreateFunctionRequest });
+
+  afterAll(async () => {
+    await lamool.terminate(true);
+  });
+
+  it('handle funcStats if startFunc event is triggered', async () => {
+    const job = new Job(1, lamool);
+    await job.addFunc(countUpLambdaFunction, {
+      Parameters: { count: 1 }
+    });
+    woolf.updateEventHandlers({
+      finishFunc: [
+        (_type, context) => {
+          const stats = context.funcStats;
+          expect(stats).toHaveLength(1);
+          expect(stats[0].state).toEqual(JobFuncState.Done);
+        }
+      ],
+      startFunc: [
+        (_type, context) => {
+          const stats = context.funcStats;
+          expect(stats).toHaveLength(1);
+          expect(stats[0].state).toEqual(JobFuncState.Processing);
+        }
+      ]
+    });
+    const result = await job.run({});
+    expect(result).toEqual({ count: 2 });
   });
 });

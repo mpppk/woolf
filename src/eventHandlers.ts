@@ -1,4 +1,4 @@
-import { Job } from './job';
+import { Job, JobFuncStat } from './job';
 import { IWoolfData } from './models';
 import { IJobStat } from './scheduler/scheduler';
 
@@ -29,13 +29,14 @@ export interface IWoolfAddFuncEventContext extends IWoolfBaseJobEventContext {
 
 export interface IWoolfFuncEventContext extends IWoolfJobEventContext {
   funcName: string;
+  funcStats: JobFuncStat[];
 }
 
 export type WoolfEventContext =
-  IWoolfWFEventContext |
-  IWoolfFinishJobEventContext |
-  IWoolfJobEventContext |
-  IWoolfFuncEventContext;
+  | IWoolfWFEventContext
+  | IWoolfFinishJobEventContext
+  | IWoolfJobEventContext
+  | IWoolfFuncEventContext;
 
 export type WoolfEventHandler<T> = (type: string, context: T) => void;
 
@@ -48,8 +49,7 @@ type IWoolfFuncEventHandlers = Record<WoolfFuncEvent, Array<WoolfEventHandler<IW
 type IWoolfJobEventHandlers = Record<WoolfJobEvent, Array<WoolfEventHandler<IWoolfJobEventContext>>>;
 type IWoolfFinishJobEventHandlers = Record<WoolfFinishJobEvent, Array<WoolfEventHandler<IWoolfFinishJobEventContext>>>;
 type IWoolfWFEventHandlers = Record<WoolfWFEvent, Array<WoolfEventHandler<IWoolfWFEventContext>>>;
-export type IWoolfEventHandlers =
-  IWoolfFinishJobEventHandlers &
+export type IWoolfEventHandlers = IWoolfFinishJobEventHandlers &
   IWoolfJobEventHandlers &
   IWoolfWFEventHandlers &
   IWoolfFuncEventHandlers;
