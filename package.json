@@ -1,6 +1,6 @@
 {
   "name": "woolf",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Universal workflow engine on lamool",
   "main": "src/index.js",
   "scripts": {
