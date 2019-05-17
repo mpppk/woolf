@@ -82,6 +82,10 @@ describe('Parameters', () => {
   const lamool = new Lamool();
   const woolf = new Woolf(lamool, { name: 'woolf', defaultCreateFunctionRequest });
 
+  afterAll(async () => {
+    await lamool.terminate(true);
+  });
+
   it('add properties to payload', async () => {
     const job = woolf.newJob();
     await job.addFunc(countUpLambdaFunction, {
@@ -121,8 +125,9 @@ describe('stats', () => {
       Parameters: { count: 1 }
     });
 
-    const expectedStat = {
+    const expectedStat: JobFuncStat = {
       ...generateDefaultFuncStat(),
+      Code: countUpLambdaFunction,
       FunctionName: `${expectedJobName}-${expectedFunctionName}`,
       Parameters: { count: 1 }
     };
@@ -138,6 +143,7 @@ describe('stats', () => {
 
     const expectedStat1: JobFuncStat = {
       ...generateDefaultFuncStat(),
+      Code: countUpLambdaFunction,
       Parameters: { count: 1 }
     };
     const stat = job.getFuncStats()[0];
@@ -146,6 +152,7 @@ describe('stats', () => {
     await job.run({});
     const expectedStat2: JobFuncStat = {
       ...generateDefaultFuncStat(),
+      Code: countUpLambdaFunction,
       Parameters: { count: 1 },
       state: JobFuncState.Done
     };
@@ -185,5 +192,27 @@ describe('EventManager', () => {
     });
     const result = await job.run({});
     expect(result).toEqual({ count: 2 });
+  });
+});
+
+describe('Job.getFuncStats', () => {
+  const lamool = new Lamool();
+
+  afterAll(async () => {
+    await lamool.terminate(true);
+  });
+
+  it('return object that have InputPath/Output/Parameters property', async () => {
+    const job = new Job(1, lamool);
+    const countParameters = { count: 1 };
+    await job.addFunc(countUpLambdaFunction, {
+      Parameters: countParameters
+    });
+    const jobStats = job.getFuncStats();
+    expect(jobStats).toHaveLength(1);
+    const jobStat = jobStats[0];
+    expect(jobStat.InputPath).toBe('$');
+    expect(jobStat.OutputPath).toBe('$');
+    expect(jobStat.Parameters).toEqual(countParameters);
   });
 });

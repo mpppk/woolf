@@ -32,6 +32,7 @@ export const countUpLambdaFunction: LambdaFunction<ICountData | ICountData[], IC
 
 export const generateDefaultFuncStat = (): JobFuncStat => {
   return {
+    Code: () => {}, // tslint:disable-line no-empty
     FunctionName: 'job0-function0',
     Handler: 'index.handler',
     InputPath: '$',

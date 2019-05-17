@@ -35,7 +35,9 @@ export interface IJobFuncOption extends CreateFunctionRequest {
 export interface IJobFuncInfo extends IJobFuncOption {
   state: JobFuncState;
 }
-export type JobFuncStat = Omit<IJobFuncInfo, 'Code'>;
+export type JobFuncStat = Omit<IJobFuncInfo, 'Code'> & {
+  Code: LambdaFunction<any, any>;
+};
 export type DefaultJobFuncOption = Pick<
   IJobFuncOption,
   'Handler' | 'Role' | 'Runtime' | 'InputPath' | 'ResultPath' | 'OutputPath' | 'Parameters'
@@ -44,7 +46,7 @@ export type DefaultJobFuncOption = Pick<
 export class Job {
   public name: string;
   private plambda: PLambda;
-  private funcInfoMap: Map<string, IJobFuncInfo> = new Map();
+  private funcStatMap: Map<string, JobFuncStat> = new Map();
   private readonly workflowName: string;
   private readonly eventManager: EventManager;
   private readonly defaultJobFuncOption: DefaultJobFuncOption & Partial<IJobFuncOption>;
@@ -81,10 +83,12 @@ export class Job {
 
     const eventContext = { ...this.getBaseEventContext(), funcName };
     this.eventManager.dispatchAddFuncEvent(eventContext);
-    this.funcInfoMap.set(funcName, {
+    const funcStat = {
       ...combinedParams,
+      Code: func,
       state: JobFuncState.Ready
-    });
+    };
+    this.funcStatMap.set(funcName, funcStat);
     return await this.plambda.createFunction(combinedParams as CreateFunctionRequest); // FIXME
   }
 
@@ -115,18 +119,17 @@ export class Job {
   }
 
   public getFuncStats(): JobFuncStat[] {
-    const funcInfoList = Array.from(this.funcInfoMap.values());
+    const funcInfoList = Array.from(this.funcStatMap.values());
     return funcInfoList.map(
       (funcInfo): JobFuncStat => {
         const newFuncInfo = { ...funcInfo };
-        delete newFuncInfo.Code;
         return newFuncInfo;
       }
     );
   }
 
   private async executeFuncWithPaths(funcName: string, data: IWoolfData | IWoolfData[]): Promise<IWoolfData> {
-    const funcOpt = this.funcInfoMap.get(funcName);
+    const funcOpt = this.funcStatMap.get(funcName);
     if (!funcOpt) {
       throw new Error('func option not found. function name: ' + funcName);
     }
@@ -166,18 +169,18 @@ export class Job {
   }
 
   private getFuncNames(): string[] {
-    return Array.from(this.funcInfoMap.keys());
+    return Array.from(this.funcStatMap.keys());
   }
 
   private updateFuncState(funcName: string, newState: JobFuncState) {
-    const funcInfo = this.funcInfoMap.get(funcName);
+    const funcInfo = this.funcStatMap.get(funcName);
     if (funcInfo === undefined) {
       throw new Error(
         `failed to update JobFuncState to ${newState} because JobFuncInfo does not exist which named ` + funcName
       );
     }
 
-    this.funcInfoMap.set(funcName, {
+    this.funcStatMap.set(funcName, {
       ...funcInfo,
       state: newState
     });

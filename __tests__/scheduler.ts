@@ -64,12 +64,14 @@ describe('scheduler', () => {
     const expectedFuncStats1ForJob0: JobFuncStat[] = [
       {
         ...generateDefaultFuncStat(),
+        Code: countUpLambdaFunction,
         FunctionName: 'job0-function0'
       }
     ];
     const expectedFuncStats1ForJob1: JobFuncStat[] = [
       {
         ...generateDefaultFuncStat(),
+        Code: countUpLambdaFunction,
         FunctionName: 'job1-function0'
       }
     ];
