@@ -36,7 +36,7 @@
     "@types/jsonpath": "0.2.0",
     "@types/jszip": "3.1.6",
     "@types/lodash": "4.14.134",
-    "@types/node": "10.14.9",
+    "@types/node": "10.14.10",
     "@types/workerpool": "2.3.1",
     "codecov": "3.5.0",
     "husky": "2.4.1",
