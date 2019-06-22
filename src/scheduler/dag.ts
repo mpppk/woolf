@@ -1,5 +1,7 @@
+import _ = require('lodash');
+
 export interface INode {
-  id: number
+  id: number;
 }
 
 export class DAG<Node extends INode> {
@@ -7,6 +9,7 @@ export class DAG<Node extends INode> {
   private toNodes: Map<number, Node[]> = new Map();
   private fromNodes: Map<number, Node[]> = new Map();
   private maxID = 0;
+
   public getNewID(): number {
     return this.maxID++;
   }
@@ -19,7 +22,7 @@ export class DAG<Node extends INode> {
   }
 
   public addNodes(nodes: Node[]) {
-    nodes.forEach((node) => this.addNode(node));
+    nodes.forEach(node => this.addNode(node));
   }
 
   public addEdge(from: Node, to: Node): void {
@@ -47,7 +50,7 @@ export class DAG<Node extends INode> {
 
   public topologicalSort(): Node[] {
     const visited: Map<number, boolean> = new Map(
-      Array.from(this.nodes.keys()).map((id) => [id, false] as [number, boolean])
+      Array.from(this.nodes.keys()).map(id => [id, false] as [number, boolean])
     );
     const stack: Node[] = [];
     for (const node of Array.from(this.nodes.values())) {
@@ -58,6 +61,13 @@ export class DAG<Node extends INode> {
     return stack;
   }
 
+  public getTerminusNodes(): Node[] {
+    const nodeIDs = Array.from(this.nodes.entries()).map(([id]) => id);
+    const toNodeIDs = Array.from(this.toNodes.entries()).map(([id]) => id);
+    const terminusNodeIDs = _.difference(nodeIDs, toNodeIDs);
+    return terminusNodeIDs.map(id => this.nodes.get(id)!);
+  }
+
   private addToNodes(from: Node, to: Node) {
     const toNodes = this.toNodes.get(from.id);
     if (toNodes === undefined) {
@@ -65,7 +75,7 @@ export class DAG<Node extends INode> {
       return;
     }
 
-    if (toNodes.find((edge) => edge.id === to.id) === undefined) {
+    if (toNodes.find(edge => edge.id === to.id) === undefined) {
       toNodes.push(to);
     }
   }
@@ -77,7 +87,7 @@ export class DAG<Node extends INode> {
       return;
     }
 
-    if (fromNodes.find((edge) => edge.id === from.id) === undefined) {
+    if (fromNodes.find(edge => edge.id === from.id) === undefined) {
       fromNodes.push(from);
     }
   }
