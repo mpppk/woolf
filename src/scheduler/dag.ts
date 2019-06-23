@@ -61,6 +61,13 @@ export class DAG<Node extends INode> {
     return stack;
   }
 
+  public getStartNodes(): Node[] {
+    const nodeIDs = Array.from(this.nodes.entries()).map(([id]) => id);
+    const fromNodeIDs = Array.from(this.fromNodes.entries()).map(([id]) => id);
+    const startNodeIDs = _.difference(nodeIDs, fromNodeIDs);
+    return startNodeIDs.map(id => this.nodes.get(id)!);
+  }
+
   public getTerminusNodes(): Node[] {
     const nodeIDs = Array.from(this.nodes.entries()).map(([id]) => id);
     const toNodeIDs = Array.from(this.toNodes.entries()).map(([id]) => id);
