@@ -15,6 +15,8 @@ export enum JobState {
 export interface IJobStat {
   funcs: JobFuncStat[];
   id: number;
+  isStartJob: boolean;
+  isTerminusJob: boolean;
   name: string;
   state: JobState;
   toJobIDs: number[];
@@ -120,11 +122,24 @@ export class Scheduler {
     return this.graph.getNodes().map(this.getJobStat.bind(this));
   }
 
+  private getStartJobs(): Job[] {
+    return this.graph.getStartNodes();
+  }
+
+  private getTerminusJobs(): Job[] {
+    return this.graph.getTerminusNodes();
+  }
+
   private getJobStat(job: Job): IJobStat {
+    const startJobIDs = this.getStartJobs().map(j => j.id);
+    const terminusJobIDs = this.getTerminusJobs().map(j => j.id);
+
     return {
       fromJobIDs: this.graph.getFromNodes(job).map(j => j.id),
       funcs: job.getFuncStats(),
       id: job.id,
+      isStartJob: startJobIDs.includes(job.id),
+      isTerminusJob: terminusJobIDs.includes(job.id),
       name: job.name,
       state: this.getJobState(job),
       toJobIDs: this.graph.getToNodes(job).map(j => j.id)

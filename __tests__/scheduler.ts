@@ -77,8 +77,26 @@ describe('scheduler', () => {
     ];
 
     const expectedStats1: IJobStat[] = [
-      { funcs: expectedFuncStats1ForJob0, id: 0, name: 'job0', state: JobState.Ready, toJobIDs: [1], fromJobIDs: [] },
-      { funcs: expectedFuncStats1ForJob1, id: 1, name: 'job1', state: JobState.Suspend, toJobIDs: [], fromJobIDs: [0] }
+      {
+        fromJobIDs: [],
+        funcs: expectedFuncStats1ForJob0,
+        id: 0,
+        isStartJob: true,
+        isTerminusJob: false,
+        name: 'job0',
+        state: JobState.Ready,
+        toJobIDs: [1]
+      },
+      {
+        fromJobIDs: [0],
+        funcs: expectedFuncStats1ForJob1,
+        id: 1,
+        isStartJob: false,
+        isTerminusJob: true,
+        name: 'job1',
+        state: JobState.Suspend,
+        toJobIDs: []
+      }
     ];
     expect(scheduler.stats()).toEqual(expect.arrayContaining(expectedStats1));
 
@@ -89,18 +107,47 @@ describe('scheduler', () => {
         fromJobIDs: [],
         funcs: expectedFuncStats1ForJob0,
         id: 0,
+        isStartJob: true,
+        isTerminusJob: false,
         name: 'job0',
         state: JobState.Processing,
         toJobIDs: [1]
       },
-      { funcs: expectedFuncStats1ForJob1, id: 1, name: 'job1', state: JobState.Suspend, toJobIDs: [], fromJobIDs: [0] }
+      {
+        fromJobIDs: [0],
+        funcs: expectedFuncStats1ForJob1,
+        id: 1,
+        isStartJob: false,
+        isTerminusJob: true,
+        name: 'job1',
+        state: JobState.Suspend,
+        toJobIDs: []
+      }
     ];
     expect(scheduler.stats()).toEqual(expect.arrayContaining(expectedStats2));
 
     scheduler.doneJob(job0, {});
     const expectedStats3: IJobStat[] = [
-      { funcs: expectedFuncStats1ForJob0, id: 0, name: 'job0', state: JobState.Done, toJobIDs: [1], fromJobIDs: [] },
-      { funcs: expectedFuncStats1ForJob1, id: 1, name: 'job1', state: JobState.Ready, toJobIDs: [], fromJobIDs: [0] }
+      {
+        fromJobIDs: [],
+        funcs: expectedFuncStats1ForJob0,
+        id: 0,
+        isStartJob: true,
+        isTerminusJob: false,
+        name: 'job0',
+        state: JobState.Done,
+        toJobIDs: [1]
+      },
+      {
+        fromJobIDs: [0],
+        funcs: expectedFuncStats1ForJob1,
+        id: 1,
+        isStartJob: false,
+        isTerminusJob: true,
+        name: 'job1',
+        state: JobState.Ready,
+        toJobIDs: []
+      }
     ];
     expect(scheduler.stats()).toEqual(expect.arrayContaining(expectedStats3));
   });
