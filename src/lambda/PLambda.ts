@@ -1,33 +1,42 @@
 import { CreateFunctionRequest, Types } from 'aws-sdk/clients/lambda';
 import { IInvokeParams } from 'lamool/src/lambda';
 import { IWoolfData } from '../models';
-import { ILambda } from './ILambda';
+import { ILambda, InvocationAcceptanceCallback } from './ILambda';
 
 export class PLambda {
-  constructor(private lamool: ILambda) { }
+  constructor(private lamool: ILambda) {}
 
   public async createFunction(params: CreateFunctionRequest): Promise<Types.FunctionConfiguration> {
-     return await new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       this.lamool.createFunction(params, (err, data) => {
-        if (err) { reject(err); }
+        if (err) {
+          reject(err);
+        }
         resolve(data as Types.FunctionConfiguration); // FIXME
       });
     });
-  };
+  }
 
-  public async invoke(invokeParams: IInvokeParams) {
+  public async invoke(invokeParams: IInvokeParams, invocationAcceptanceCallback?: InvocationAcceptanceCallback) {
     const result: IWoolfData = await new Promise((resolve, reject) => {
-      this.lamool.invoke(invokeParams, (err, data) => {
+      const res = this.lamool.invoke(invokeParams, (err, data) => {
         if (err) {
           reject(err);
           return;
         }
         resolve(data || {});
       });
+      if (invocationAcceptanceCallback && res !== undefined) {
+        invocationAcceptanceCallback(res);
+      }
     });
 
-    if (!result) { throw new Error('data is empty') }
-    if (!result.Payload) { throw new Error('payload is empty') }
+    if (!result) {
+      throw new Error('data is empty');
+    }
+    if (!result.Payload) {
+      throw new Error('payload is empty');
+    }
 
     if (typeof result.Payload !== 'string') {
       throw new Error('PLambda only support string type payload currently');

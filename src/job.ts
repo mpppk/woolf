@@ -1,13 +1,14 @@
 import { CreateFunctionRequest, FunctionConfiguration } from 'aws-sdk/clients/lambda';
 // @ts-ignore
 import jp = require('jsonpath/jsonpath.min');
+import { LambdaEnvironment } from 'lamool';
 import { IPayload, LambdaFunction } from 'lamool/src/lambda';
 import { funcToZip } from 'lamool/src/util';
 import { reduce } from 'p-iteration';
 import { applyParameters } from './applyParameters';
 import { IWoolfFuncEventContext } from './eventHandlers';
 import { EventManager } from './eventManager';
-import { ILambda } from './lambda/ILambda';
+import { ILambda, InvocationAcceptanceCallback } from './lambda/ILambda';
 import { PLambda } from './lambda/PLambda';
 import { mergeByResultPath } from './mergeByResultPath';
 import { IWoolfData } from './models';
@@ -35,6 +36,7 @@ export interface IJobFuncOption extends CreateFunctionRequest {
 export interface IJobFuncInfo extends IJobFuncOption {
   state: JobFuncState;
 }
+
 export type JobFuncStat = Omit<IJobFuncInfo, 'Code'> & {
   Code: LambdaFunction<any, any>;
 };
@@ -96,23 +98,19 @@ export class Job {
     return await reduce(
       this.getFuncNames(),
       async (accData: IWoolfData, funcName: string) => {
-        this.updateFuncState(funcName, JobFuncState.Processing);
-        const context: IWoolfFuncEventContext = {
-          ...this.getBaseEventContext(),
-          funcName,
-          funcStats: this.getFuncStats(),
-          payload: accData,
-          result: {}
+        let context: IWoolfFuncEventContext | null = null;
+        const callback: InvocationAcceptanceCallback = res => {
+          context = this.dispatchStartFuncEvent(funcName, accData, res.environment);
         };
-        this.eventManager.dispatchStartFuncEvent(context);
-        const result = await this.executeFuncWithPaths(funcName, accData);
-        this.updateFuncState(funcName, JobFuncState.Done);
-        this.eventManager.dispatchFinishFuncEvent({
-          ...context,
-          funcStats: this.getFuncStats(),
-          result
-        });
-        return result;
+        const result = await this.executeFuncWithPaths(funcName, accData, callback.bind(this));
+        const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+        while (true) {
+          if (context !== null) {
+            this.dispatchFinishFuncEvent(context, result);
+            return result;
+          }
+          await sleep(50);
+        }
       },
       payload
     );
@@ -128,7 +126,38 @@ export class Job {
     );
   }
 
-  private async executeFuncWithPaths(funcName: string, data: IWoolfData | IWoolfData[]): Promise<IWoolfData> {
+  private dispatchStartFuncEvent(
+    funcName: string,
+    data: IWoolfData,
+    environment: LambdaEnvironment
+  ): IWoolfFuncEventContext {
+    this.updateFuncState(funcName, JobFuncState.Processing);
+    const context: IWoolfFuncEventContext = {
+      ...this.getBaseEventContext(),
+      environment,
+      funcName,
+      funcStats: this.getFuncStats(),
+      payload: data,
+      result: {}
+    };
+    this.eventManager.dispatchStartFuncEvent(context);
+    return context;
+  }
+
+  private dispatchFinishFuncEvent(context: IWoolfFuncEventContext, result: IWoolfData) {
+    this.updateFuncState(context.funcName, JobFuncState.Done);
+    this.eventManager.dispatchFinishFuncEvent({
+      ...context,
+      funcStats: this.getFuncStats(),
+      result
+    });
+  }
+
+  private async executeFuncWithPaths(
+    funcName: string,
+    data: IWoolfData | IWoolfData[],
+    invocationAcceptanceCallback?: InvocationAcceptanceCallback
+  ): Promise<IWoolfData> {
     const funcOpt = this.funcStatMap.get(funcName);
     if (!funcOpt) {
       throw new Error('func option not found. function name: ' + funcName);
@@ -142,10 +171,13 @@ export class Job {
 
     let result: IWoolfData;
     try {
-      result = await this.plambda.invoke({
-        FunctionName: funcName,
-        Payload: JSON.stringify(parameterAppliedPayload)
-      });
+      result = await this.plambda.invoke(
+        {
+          FunctionName: funcName,
+          Payload: JSON.stringify(parameterAppliedPayload)
+        },
+        invocationAcceptanceCallback
+      );
     } catch (e) {
       throw new Error(
         `failed to execute function: currentData: ${JSON.stringify(

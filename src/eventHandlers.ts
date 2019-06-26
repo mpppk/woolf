@@ -1,6 +1,7 @@
 import { Job, JobFuncStat } from './job';
 import { IWoolfData } from './models';
 import { IJobStat } from './scheduler/scheduler';
+import { LambdaEnvironment } from 'lamool';
 
 export interface IWoolfWFEventContext {
   workflowName: string;
@@ -30,6 +31,7 @@ export interface IWoolfAddFuncEventContext extends IWoolfBaseJobEventContext {
 export interface IWoolfFuncEventContext extends IWoolfJobEventContext {
   funcName: string;
   funcStats: JobFuncStat[];
+  environment: LambdaEnvironment;
 }
 
 export type WoolfEventContext =
