@@ -43,6 +43,7 @@ describe('scheduler', () => {
     expect(scheduler.isReadiedJob(job1)).toBeFalsy();
     expect(scheduler.isSuspendedJob(job1)).toBeTruthy();
 
+    job0.environment = 'local';
     scheduler.doneJob(job0, {});
     expect(scheduler.isDoneJob(job0)).toBeTruthy();
     expect(scheduler.isReadiedJob(job0)).toBeFalsy();
@@ -78,6 +79,7 @@ describe('scheduler', () => {
 
     const expectedStats1: IJobStat[] = [
       {
+        environment: 'pending',
         fromJobIDs: [],
         funcs: expectedFuncStats1ForJob0,
         id: 0,
@@ -88,6 +90,7 @@ describe('scheduler', () => {
         toJobIDs: [1]
       },
       {
+        environment: 'pending',
         fromJobIDs: [0],
         funcs: expectedFuncStats1ForJob1,
         id: 1,
@@ -101,9 +104,11 @@ describe('scheduler', () => {
     expect(scheduler.stats()).toEqual(expect.arrayContaining(expectedStats1));
 
     scheduler.startJob(job0);
+    job0.environment = 'local';
 
     const expectedStats2: IJobStat[] = [
       {
+        environment: 'local',
         fromJobIDs: [],
         funcs: expectedFuncStats1ForJob0,
         id: 0,
@@ -114,6 +119,7 @@ describe('scheduler', () => {
         toJobIDs: [1]
       },
       {
+        environment: 'pending',
         fromJobIDs: [0],
         funcs: expectedFuncStats1ForJob1,
         id: 1,
@@ -129,6 +135,7 @@ describe('scheduler', () => {
     scheduler.doneJob(job0, {});
     const expectedStats3: IJobStat[] = [
       {
+        environment: 'local',
         fromJobIDs: [],
         funcs: expectedFuncStats1ForJob0,
         id: 0,
@@ -139,6 +146,7 @@ describe('scheduler', () => {
         toJobIDs: [1]
       },
       {
+        environment: 'pending',
         fromJobIDs: [0],
         funcs: expectedFuncStats1ForJob1,
         id: 1,

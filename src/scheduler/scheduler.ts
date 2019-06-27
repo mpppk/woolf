@@ -1,4 +1,5 @@
 import { CreateFunctionRequest } from 'aws-sdk/clients/lambda';
+import { LambdaEnvironment } from 'lamool';
 import * as _ from 'lodash';
 import { IJobOption, Job, JobFuncStat } from '../job';
 import { ILambda } from '../lambda/ILambda';
@@ -12,7 +13,10 @@ export enum JobState {
   Suspend = 'SUSPEND'
 }
 
+export type JobEnvironment = LambdaEnvironment | 'pending';
+
 export interface IJobStat {
+  environment: JobEnvironment;
   funcs: JobFuncStat[];
   id: number;
   isStartJob: boolean;
@@ -51,6 +55,10 @@ export class Scheduler {
   }
 
   public doneJob(job: Job, result: IWoolfData): Array<[Job, IWoolfData[]]> {
+    if (job.environment === 'pending') {
+      throw new Error('invalid job environment: ' + job.environment);
+    }
+
     this.processingJobIDs = this.processingJobIDs.filter(id => id !== job.id);
     this.doneJobs.set(job.id, result);
     const nextJobs = this.graph
@@ -135,6 +143,7 @@ export class Scheduler {
     const terminusJobIDs = this.getTerminusJobs().map(j => j.id);
 
     return {
+      environment: job.environment,
       fromJobIDs: this.graph.getFromNodes(job).map(j => j.id),
       funcs: job.getFuncStats(),
       id: job.id,

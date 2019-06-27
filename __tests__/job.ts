@@ -40,6 +40,14 @@ describe('woolf job', () => {
       'failed to execute function: currentData: {"data":[]}, funcName: failJob-function0,  registered functions: failJob-function0, Handled error type:Error message:error'
     ); // FIXME message undefined
   });
+
+  it('update environment', async () => {
+    const job = woolf.newJob();
+    await job.addFunc<ICountPayload>(countUpLambdaFunction);
+    expect(job.environment).toBe('pending');
+    await job.run({ count: 1 });
+    expect(job.environment).toBe('local');
+  });
 });
 
 describe('paths', () => {
