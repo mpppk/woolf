@@ -39,7 +39,7 @@
     "@types/node": "10.14.10",
     "@types/workerpool": "3.1.0",
     "codecov": "3.5.0",
-    "husky": "2.6.0",
+    "husky": "2.7.0",
     "jest": "24.8.0",
     "pretty-quick": "1.11.1",
     "prettier": "1.18.2",
