@@ -12,6 +12,7 @@ import { ILambda, InvocationAcceptanceCallback } from './lambda/ILambda';
 import { PLambda } from './lambda/PLambda';
 import { mergeByResultPath } from './mergeByResultPath';
 import { IWoolfData } from './models';
+import { JobEnvironment } from './scheduler/scheduler';
 import { Omit } from './types';
 
 export enum JobFuncState {
@@ -47,6 +48,7 @@ export type DefaultJobFuncOption = Pick<
 
 export class Job {
   public name: string;
+  public environment: JobEnvironment = 'pending';
   private plambda: PLambda;
   private funcStatMap: Map<string, JobFuncStat> = new Map();
   private readonly workflowName: string;
@@ -100,6 +102,7 @@ export class Job {
       async (accData: IWoolfData, funcName: string) => {
         let context: IWoolfFuncEventContext | null = null;
         const callback: InvocationAcceptanceCallback = res => {
+          this.environment = res.environment;
           context = this.dispatchStartFuncEvent(funcName, accData, res.environment);
         };
         const result = await this.executeFuncWithPaths(funcName, accData, callback.bind(this));
