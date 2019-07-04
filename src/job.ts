@@ -15,6 +15,7 @@ import { IWoolfData } from './models';
 import { JobEnvironment } from './scheduler/scheduler';
 import { StatManager } from './statManager';
 import { Omit } from './types';
+import _ = require('lodash');
 
 export enum JobFuncState {
   Processing = 'PROCESSING',
@@ -101,26 +102,27 @@ export class Job {
   }
 
   public async run(payload: IWoolfData): Promise<IWoolfData> {
-    return await reduce(
-      this.getFuncNames(),
-      async (accData: IWoolfData, funcName: string) => {
-        let context: IWoolfFuncEventContext | null = null;
-        const callback: InvocationAcceptanceCallback = res => {
-          this.environment = res.environment;
-          context = this.dispatchStartFuncEvent(funcName, accData, res.environment);
-        };
-        const result = await this.executeFuncWithPaths(funcName, accData, callback.bind(this));
-        const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-        while (true) {
-          if (context !== null) {
-            this.dispatchFinishFuncEvent(context, result);
-            return result;
-          }
-          await sleep(50);
+    const reduceFunc = async (accData: IWoolfData, funcName: string) => {
+      let context: IWoolfFuncEventContext | null = null;
+      const callback: InvocationAcceptanceCallback = res => {
+        this.environment = res.environment;
+        context = this.dispatchStartFuncEvent(funcName, accData, res.environment);
+      };
+      const result = await this.executeFuncWithPaths(funcName, accData, callback.bind(this));
+      const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+      while (true) {
+        if (context !== null) {
+          this.dispatchFinishFuncEvent(context, result);
+          return result;
         }
-      },
-      payload
-    );
+        await sleep(50);
+      }
+    };
+    this.statManager.updateJobEvent(this.id, _.cloneDeep(payload));
+    const results = await reduce(this.getFuncNames(), reduceFunc, payload);
+    // FIXME
+    this.statManager.updateJobResults(this.id, _.cloneDeep(results));
+    return results;
   }
 
   public getFuncStats(): JobFuncStat[] {
@@ -131,6 +133,10 @@ export class Job {
         return this.statManager.newFuncStat(newFuncInfo);
       }
     );
+  }
+
+  public getEventsAndResults(): Pick<JobFuncStat, 'event' | 'results'> {
+    return this.statManager.getJobEventAndResults(this.id);
   }
 
   private dispatchStartFuncEvent(
