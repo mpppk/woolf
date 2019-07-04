@@ -21,7 +21,9 @@ export interface IJobStat {
   id: number;
   isStartJob: boolean;
   isTerminusJob: boolean;
+  event?: IWoolfData;
   name: string;
+  results?: IWoolfData | IWoolfData[];
   state: JobState;
   toJobIDs: number[];
   fromJobIDs: number[];
@@ -141,15 +143,18 @@ export class Scheduler {
   private getJobStat(job: Job): IJobStat {
     const startJobIDs = this.getStartJobs().map(j => j.id);
     const terminusJobIDs = this.getTerminusJobs().map(j => j.id);
+    const { event, results } = job.getEventsAndResults();
 
     return {
       environment: job.environment,
+      event,
       fromJobIDs: this.graph.getFromNodes(job).map(j => j.id),
       funcs: job.getFuncStats(),
       id: job.id,
       isStartJob: startJobIDs.includes(job.id),
       isTerminusJob: terminusJobIDs.includes(job.id),
       name: job.name,
+      results,
       state: this.getJobState(job),
       toJobIDs: this.graph.getToNodes(job).map(j => j.id)
     };

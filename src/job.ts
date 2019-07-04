@@ -13,7 +13,9 @@ import { PLambda } from './lambda/PLambda';
 import { mergeByResultPath } from './mergeByResultPath';
 import { IWoolfData } from './models';
 import { JobEnvironment } from './scheduler/scheduler';
+import { StatManager } from './statManager';
 import { Omit } from './types';
+import _ = require('lodash');
 
 export enum JobFuncState {
   Processing = 'PROCESSING',
@@ -40,6 +42,8 @@ export interface IJobFuncInfo extends IJobFuncOption {
 
 export type JobFuncStat = Omit<IJobFuncInfo, 'Code'> & {
   Code: LambdaFunction<any, any>;
+  event?: IWoolfData;
+  results?: IWoolfData | IWoolfData[];
 };
 export type DefaultJobFuncOption = Pick<
   IJobFuncOption,
@@ -54,6 +58,7 @@ export class Job {
   private readonly workflowName: string;
   private readonly eventManager: EventManager;
   private readonly defaultJobFuncOption: DefaultJobFuncOption & Partial<IJobFuncOption>;
+  private statManager = new StatManager();
 
   constructor(
     public id: number,
@@ -87,7 +92,7 @@ export class Job {
 
     const eventContext = { ...this.getBaseEventContext(), funcName };
     this.eventManager.dispatchAddFuncEvent(eventContext);
-    const funcStat = {
+    const funcStat: JobFuncStat = {
       ...combinedParams,
       Code: func,
       state: JobFuncState.Ready
@@ -97,26 +102,27 @@ export class Job {
   }
 
   public async run(payload: IWoolfData): Promise<IWoolfData> {
-    return await reduce(
-      this.getFuncNames(),
-      async (accData: IWoolfData, funcName: string) => {
-        let context: IWoolfFuncEventContext | null = null;
-        const callback: InvocationAcceptanceCallback = res => {
-          this.environment = res.environment;
-          context = this.dispatchStartFuncEvent(funcName, accData, res.environment);
-        };
-        const result = await this.executeFuncWithPaths(funcName, accData, callback.bind(this));
-        const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-        while (true) {
-          if (context !== null) {
-            this.dispatchFinishFuncEvent(context, result);
-            return result;
-          }
-          await sleep(50);
+    const reduceFunc = async (accData: IWoolfData, funcName: string) => {
+      let context: IWoolfFuncEventContext | null = null;
+      const callback: InvocationAcceptanceCallback = res => {
+        this.environment = res.environment;
+        context = this.dispatchStartFuncEvent(funcName, accData, res.environment);
+      };
+      const result = await this.executeFuncWithPaths(funcName, accData, callback.bind(this));
+      const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+      while (true) {
+        if (context !== null) {
+          this.dispatchFinishFuncEvent(context, result);
+          return result;
         }
-      },
-      payload
-    );
+        await sleep(50);
+      }
+    };
+    this.statManager.updateJobEvent(this.id, _.cloneDeep(payload));
+    const results = await reduce(this.getFuncNames(), reduceFunc, payload);
+    // FIXME
+    this.statManager.updateJobResults(this.id, _.cloneDeep(results));
+    return results;
   }
 
   public getFuncStats(): JobFuncStat[] {
@@ -124,9 +130,13 @@ export class Job {
     return funcInfoList.map(
       (funcInfo): JobFuncStat => {
         const newFuncInfo = { ...funcInfo };
-        return newFuncInfo;
+        return this.statManager.newFuncStat(newFuncInfo);
       }
     );
+  }
+
+  public getEventsAndResults(): Pick<JobFuncStat, 'event' | 'results'> {
+    return this.statManager.getJobEventAndResults(this.id);
   }
 
   private dispatchStartFuncEvent(
@@ -134,6 +144,7 @@ export class Job {
     data: IWoolfData,
     environment: LambdaEnvironment
   ): IWoolfFuncEventContext {
+    this.statManager.updateFuncEvent(funcName, data);
     this.updateFuncState(funcName, JobFuncState.Processing);
     const context: IWoolfFuncEventContext = {
       ...this.getBaseEventContext(),
@@ -148,6 +159,7 @@ export class Job {
   }
 
   private dispatchFinishFuncEvent(context: IWoolfFuncEventContext, result: IWoolfData) {
+    this.statManager.updateFuncResults(context.funcName, result);
     this.updateFuncState(context.funcName, JobFuncState.Done);
     this.eventManager.dispatchFinishFuncEvent({
       ...context,
