@@ -13,6 +13,7 @@ import { PLambda } from './lambda/PLambda';
 import { mergeByResultPath } from './mergeByResultPath';
 import { IWoolfData } from './models';
 import { JobEnvironment } from './scheduler/scheduler';
+import { StatManager } from './statManager';
 import { Omit } from './types';
 
 export enum JobFuncState {
@@ -40,6 +41,8 @@ export interface IJobFuncInfo extends IJobFuncOption {
 
 export type JobFuncStat = Omit<IJobFuncInfo, 'Code'> & {
   Code: LambdaFunction<any, any>;
+  event?: IWoolfData;
+  results?: IWoolfData | IWoolfData[];
 };
 export type DefaultJobFuncOption = Pick<
   IJobFuncOption,
@@ -54,6 +57,7 @@ export class Job {
   private readonly workflowName: string;
   private readonly eventManager: EventManager;
   private readonly defaultJobFuncOption: DefaultJobFuncOption & Partial<IJobFuncOption>;
+  private statManager = new StatManager();
 
   constructor(
     public id: number,
@@ -87,7 +91,7 @@ export class Job {
 
     const eventContext = { ...this.getBaseEventContext(), funcName };
     this.eventManager.dispatchAddFuncEvent(eventContext);
-    const funcStat = {
+    const funcStat: JobFuncStat = {
       ...combinedParams,
       Code: func,
       state: JobFuncState.Ready
@@ -124,7 +128,7 @@ export class Job {
     return funcInfoList.map(
       (funcInfo): JobFuncStat => {
         const newFuncInfo = { ...funcInfo };
-        return newFuncInfo;
+        return this.statManager.newFuncStat(newFuncInfo);
       }
     );
   }
@@ -134,6 +138,7 @@ export class Job {
     data: IWoolfData,
     environment: LambdaEnvironment
   ): IWoolfFuncEventContext {
+    this.statManager.updateFuncEvent(funcName, data);
     this.updateFuncState(funcName, JobFuncState.Processing);
     const context: IWoolfFuncEventContext = {
       ...this.getBaseEventContext(),
@@ -148,6 +153,7 @@ export class Job {
   }
 
   private dispatchFinishFuncEvent(context: IWoolfFuncEventContext, result: IWoolfData) {
+    this.statManager.updateFuncResults(context.funcName, result);
     this.updateFuncState(context.funcName, JobFuncState.Done);
     this.eventManager.dispatchFinishFuncEvent({
       ...context,

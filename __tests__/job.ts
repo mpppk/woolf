@@ -15,8 +15,14 @@ interface ICountPayload {
 }
 
 describe('woolf job', () => {
-  const lamool = new Lamool();
-  const woolf = new Woolf(lamool, { name: 'woolf', defaultCreateFunctionRequest });
+  let lamool = new Lamool();
+  let woolf: Woolf;
+
+  beforeEach(async () => {
+    await lamool.terminate(true);
+    lamool = new Lamool();
+    woolf = new Woolf(lamool);
+  });
 
   afterAll(async () => {
     await lamool.terminate(true);
@@ -114,9 +120,14 @@ describe('Parameters', () => {
 });
 
 describe('stats', () => {
-  const lamool = new Lamool();
-  const woolf = new Woolf(lamool, { name: 'woolf', defaultCreateFunctionRequest });
-  const woolf2 = new Woolf(lamool, { name: 'woolf', defaultCreateFunctionRequest });
+  let lamool = new Lamool();
+  let woolf: Woolf;
+
+  beforeEach(async () => {
+    await lamool.terminate(true);
+    lamool = new Lamool();
+    woolf = new Woolf(lamool);
+  });
 
   afterAll(async () => {
     await lamool.terminate(true);
@@ -124,7 +135,7 @@ describe('stats', () => {
 
   it('provide func name', async () => {
     const expectedJobName = 'test-job';
-    const job = woolf2.newJob({
+    const job = woolf.newJob({
       name: expectedJobName
     });
     const expectedFunctionName = 'test-name';
@@ -162,10 +173,37 @@ describe('stats', () => {
       ...generateDefaultFuncStat(),
       Code: countUpLambdaFunction,
       Parameters: { count: 1 },
+      event: {},
+      results: { count: 2 },
       state: JobFuncState.Done
     };
     const stat2 = job.getFuncStats()[0];
     expect(stat2).toEqual(expectedStat2);
+  });
+
+  it('return stats with payload', async () => {
+    const job = woolf.newJob();
+    await job.addFunc(countUpLambdaFunction);
+    await job.addFunc(countUpLambdaFunction);
+    await job.run({ count: 0 });
+    const expectedFuncStats: JobFuncStat[] = [
+      {
+        ...generateDefaultFuncStat(),
+        Code: countUpLambdaFunction,
+        event: { count: 0 },
+        results: { count: 1 },
+        state: JobFuncState.Done
+      },
+      {
+        ...generateDefaultFuncStat(),
+        Code: countUpLambdaFunction,
+        FunctionName: 'job0-function1',
+        event: { count: 1 },
+        results: { count: 2 },
+        state: JobFuncState.Done
+      }
+    ];
+    expect(job.getFuncStats()).toEqual(expectedFuncStats);
   });
 });
 
