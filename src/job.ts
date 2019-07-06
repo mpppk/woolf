@@ -4,6 +4,7 @@ import jp = require('jsonpath/jsonpath.min');
 import { LambdaEnvironment } from 'lamool';
 import { IPayload, LambdaFunction } from 'lamool/src/lambda';
 import { funcToZip } from 'lamool/src/util';
+import _ = require('lodash');
 import { reduce } from 'p-iteration';
 import { applyParameters } from './applyParameters';
 import { IWoolfFuncEventContext } from './eventHandlers';
@@ -15,7 +16,6 @@ import { IWoolfData } from './models';
 import { JobEnvironment } from './scheduler/scheduler';
 import { StatManager } from './statManager';
 import { Omit } from './types';
-import _ = require('lodash');
 
 export enum JobFuncState {
   Processing = 'PROCESSING',
@@ -177,12 +177,7 @@ export class Job {
     if (!funcOpt) {
       throw new Error('func option not found. function name: ' + funcName);
     }
-    const filteredByInputPathPayload = queryByJsonPath(data, funcOpt.InputPath);
-    if (filteredByInputPathPayload === null) {
-      throw new Error(`invalid InputPath(${funcOpt.InputPath}): original payload: ${data}`);
-    }
-
-    const parameterAppliedPayload = applyParameters(filteredByInputPathPayload, funcOpt.Parameters);
+    const parameterAppliedPayload = preprocessPayload(data, funcOpt.InputPath, funcOpt.Parameters);
 
     let result: IWoolfData;
     try {
@@ -200,12 +195,7 @@ export class Job {
         )}, funcName: ${funcName},  registered functions: ${this.getFuncNames()}, ${e.message}`
       );
     }
-    const mergedResult = mergeByResultPath(parameterAppliedPayload, result, funcOpt.ResultPath);
-    const output = queryByJsonPath(mergedResult, funcOpt.OutputPath);
-    if (output === null) {
-      throw new Error(`invalid OutputPath(${funcOpt.OutputPath}): original payloads: ${mergedResult}`);
-    }
-    return output;
+    return postprocessResults(parameterAppliedPayload, result, funcOpt.OutputPath, funcOpt.ResultPath);
   }
 
   private getBaseEventContext(): Pick<IWoolfFuncEventContext, 'jobName' | 'workflowName'> {
@@ -233,6 +223,29 @@ export class Job {
     });
   }
 }
+
+// tslint:disable-next-line variable-name
+const preprocessPayload = (data: IPayload | IPayload[], InputPath: string, Parameters: IPayload) => {
+  const filteredByInputPathPayload = queryByJsonPath(data, InputPath);
+  if (filteredByInputPathPayload === null) {
+    throw new Error(`invalid InputPath(${InputPath}): original payload: ${data}`);
+  }
+  return applyParameters(filteredByInputPathPayload, Parameters);
+};
+
+const postprocessResults = (
+  preprocessedPayload: IPayload | IPayload[],
+  result: IPayload | IPayload[],
+  OutputPath: string, // tslint:disable-line variable-name
+  ResultPath: string // tslint:disable-line variable-name
+) => {
+  const mergedResult = mergeByResultPath(preprocessedPayload, result, ResultPath);
+  const output = queryByJsonPath(mergedResult, OutputPath);
+  if (output === null) {
+    throw new Error(`invalid OutputPath(${OutputPath}): original payloads: ${mergedResult}`);
+  }
+  return output;
+};
 
 const queryByJsonPath = (data: IPayload | IPayload[], query: string): any | null => {
   const results = jp.query(data, query);
