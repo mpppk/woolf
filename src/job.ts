@@ -40,11 +40,20 @@ export interface IJobFuncInfo extends IJobFuncOption {
   state: JobFuncState;
 }
 
-export type JobFuncStat = Omit<IJobFuncInfo, 'Code'> & {
-  Code: LambdaFunction<any, any>;
-  event?: IWoolfData;
-  results?: IWoolfData | IWoolfData[];
-};
+export interface IJobInOut {
+  payload: IWoolfData;
+  results: IWoolfData | IWoolfData[];
+}
+
+export interface IFuncInOut extends IJobInOut {
+  event: IWoolfData;
+  rawResults: IWoolfData | IWoolfData[];
+}
+
+export type JobFuncStat = Omit<IJobFuncInfo, 'Code'> &
+  Partial<IFuncInOut> & {
+    Code: LambdaFunction<any, any>;
+  };
 export type DefaultJobFuncOption = Pick<
   IJobFuncOption,
   'Handler' | 'Role' | 'Runtime' | 'InputPath' | 'ResultPath' | 'OutputPath' | 'Parameters'
@@ -118,7 +127,7 @@ export class Job {
         await sleep(50);
       }
     };
-    this.statManager.updateJobEvent(this.id, _.cloneDeep(payload));
+    this.statManager.updateJobPayload(this.id, _.cloneDeep(payload));
     const results = await reduce(this.getFuncNames(), reduceFunc, payload);
     // FIXME
     this.statManager.updateJobResults(this.id, _.cloneDeep(results));
@@ -135,7 +144,7 @@ export class Job {
     );
   }
 
-  public getEventsAndResults(): Pick<JobFuncStat, 'event' | 'results'> {
+  public getJobInOutData(): Partial<IJobInOut> {
     return this.statManager.getJobEventAndResults(this.id);
   }
 
@@ -177,14 +186,16 @@ export class Job {
     if (!funcOpt) {
       throw new Error('func option not found. function name: ' + funcName);
     }
-    const parameterAppliedPayload = preprocessPayload(data, funcOpt.InputPath, funcOpt.Parameters);
+    this.statManager.updateFuncPayload(funcName, data);
+    const event = preprocessPayload(data, funcOpt.InputPath, funcOpt.Parameters);
+    this.statManager.updateFuncEvent(funcName, event);
 
-    let result: IWoolfData;
+    let rawResults: IWoolfData;
     try {
-      result = await this.plambda.invoke(
+      rawResults = await this.plambda.invoke(
         {
           FunctionName: funcName,
-          Payload: JSON.stringify(parameterAppliedPayload)
+          Payload: JSON.stringify(event)
         },
         invocationAcceptanceCallback
       );
@@ -195,7 +206,10 @@ export class Job {
         )}, funcName: ${funcName},  registered functions: ${this.getFuncNames()}, ${e.message}`
       );
     }
-    return postprocessResults(parameterAppliedPayload, result, funcOpt.OutputPath, funcOpt.ResultPath);
+    this.statManager.updateFuncRawResults(funcName, rawResults);
+    const results = postprocessResults(event, rawResults, funcOpt.OutputPath, funcOpt.ResultPath);
+    this.statManager.updateFuncResults(funcName, results);
+    return results;
   }
 
   private getBaseEventContext(): Pick<IWoolfFuncEventContext, 'jobName' | 'workflowName'> {
