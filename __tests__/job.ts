@@ -282,8 +282,7 @@ describe('Job.getFuncStats', () => {
     });
     const result = await job.run({ nest: { otherCount: 0 } });
     const funcStat = job.getFuncStats()[0];
-    // FIXME
-    expect(funcStat.event).toEqual({ count: 0, otherCount: 0, someKey: 1 });
+    expect(funcStat.event).toEqual({ count: 0, someKey: 1 });
     expect(result).toEqual({ count: 1 });
   });
 
