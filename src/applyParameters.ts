@@ -7,9 +7,9 @@ export const applyParameters = (data: any, parameters: IWoolfData): any => {
     return data;
   }
 
-  const newParameters = {...parameters};
+  const newParameters = { ...parameters };
   const targetKeys = Object.keys(newParameters).filter(key => key.match(/.+\.\$/));
-  targetKeys.forEach((key) => {
+  targetKeys.forEach(key => {
     const newKey = key.replace(/\.\$/g, '');
     const queryResults = jp.query(data, newParameters[key]);
     if (queryResults.length <= 0) {
@@ -23,9 +23,5 @@ export const applyParameters = (data: any, parameters: IWoolfData): any => {
     newParameters[newKey] = queryResults[0];
     delete newParameters[key];
   });
-  if (Array.isArray(data)) {
-    return newParameters;
-  }
-  return {...data, ...newParameters};
+  return newParameters;
 };
-
