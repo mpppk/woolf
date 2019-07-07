@@ -8,8 +8,8 @@ describe('woolf workflow', () => {
   let lamool = new Lamool();
   let woolf: Woolf;
 
-  beforeEach(() => {
-    lamool.terminate(true);
+  beforeEach(async () => {
+    await lamool.terminate(true);
     lamool = new Lamool();
     woolf = new Woolf(lamool);
   });
@@ -32,6 +32,8 @@ describe('woolf workflow', () => {
         ...generateDefaultFuncStat(),
         Code: countUpLambdaFunction,
         event: { count: 0 },
+        payload: { count: 0 },
+        rawResults: { count: 1 },
         results: { count: 1 },
         state: JobFuncState.Done
       },
@@ -40,6 +42,8 @@ describe('woolf workflow', () => {
         Code: countUpLambdaFunction,
         FunctionName: 'job0-function1',
         event: { count: 1 },
+        payload: { count: 1 },
+        rawResults: { count: 2 },
         results: { count: 2 },
         state: JobFuncState.Done
       }
@@ -50,6 +54,8 @@ describe('woolf workflow', () => {
         Code: countUpLambdaFunction,
         FunctionName: 'job1-function0',
         event: [{ count: 2 }],
+        payload: [{ count: 2 }],
+        rawResults: { count: 3 },
         results: { count: 3 },
         state: JobFuncState.Done
       },
@@ -58,6 +64,8 @@ describe('woolf workflow', () => {
         Code: countUpLambdaFunction,
         FunctionName: 'job1-function1',
         event: { count: 3 },
+        payload: { count: 3 },
+        rawResults: { count: 4 },
         results: { count: 4 },
         state: JobFuncState.Done
       }
@@ -66,26 +74,26 @@ describe('woolf workflow', () => {
     const expectedStats1: IJobStat[] = [
       {
         environment: 'local',
-        event: { count: 0 },
         fromJobIDs: [],
         funcs: expectedFuncStats,
         id: 0,
         isStartJob: true,
         isTerminusJob: false,
         name: 'job0',
+        payload: { count: 0 },
         results: { count: 2 },
         state: JobState.Done,
         toJobIDs: [1]
       },
       {
         environment: 'local',
-        event: [{ count: 2 }],
         fromJobIDs: [0],
         funcs: expectedFuncStats2,
         id: 1,
         isStartJob: false,
         isTerminusJob: true,
         name: 'job1',
+        payload: [{ count: 2 }],
         results: { count: 4 },
         state: JobState.Done,
         toJobIDs: []
