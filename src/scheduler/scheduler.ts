@@ -1,7 +1,7 @@
 import { CreateFunctionRequest } from 'aws-sdk/clients/lambda';
 import { LambdaEnvironment } from 'lamool';
 import * as _ from 'lodash';
-import { IJobOption, Job, JobFuncStat } from '../job';
+import { IJobInOut, IJobOption, Job, JobFuncStat } from '../job';
 import { ILambda } from '../lambda/ILambda';
 import { IWoolfData } from '../models';
 import { DAG } from './dag';
@@ -15,15 +15,13 @@ export enum JobState {
 
 export type JobEnvironment = LambdaEnvironment | 'pending';
 
-export interface IJobStat {
+export interface IJobStat extends Partial<IJobInOut> {
   environment: JobEnvironment;
   funcs: JobFuncStat[];
   id: number;
   isStartJob: boolean;
   isTerminusJob: boolean;
-  event?: IWoolfData;
   name: string;
-  results?: IWoolfData | IWoolfData[];
   state: JobState;
   toJobIDs: number[];
   fromJobIDs: number[];
@@ -143,17 +141,17 @@ export class Scheduler {
   private getJobStat(job: Job): IJobStat {
     const startJobIDs = this.getStartJobs().map(j => j.id);
     const terminusJobIDs = this.getTerminusJobs().map(j => j.id);
-    const { event, results } = job.getEventsAndResults();
+    const { payload, results } = job.getJobInOutData();
 
     return {
       environment: job.environment,
-      event,
       fromJobIDs: this.graph.getFromNodes(job).map(j => j.id),
       funcs: job.getFuncStats(),
       id: job.id,
       isStartJob: startJobIDs.includes(job.id),
       isTerminusJob: terminusJobIDs.includes(job.id),
       name: job.name,
+      payload,
       results,
       state: this.getJobState(job),
       toJobIDs: this.graph.getToNodes(job).map(j => j.id)

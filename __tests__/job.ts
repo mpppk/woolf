@@ -174,6 +174,8 @@ describe('stats', () => {
       Code: countUpLambdaFunction,
       Parameters: { count: 1 },
       event: {},
+      payload: {},
+      rawResults: { count: 2 },
       results: { count: 2 },
       state: JobFuncState.Done
     };
@@ -191,6 +193,8 @@ describe('stats', () => {
         ...generateDefaultFuncStat(),
         Code: countUpLambdaFunction,
         event: { count: 0 },
+        payload: { count: 0 },
+        rawResults: { count: 1 },
         results: { count: 1 },
         state: JobFuncState.Done
       },
@@ -199,6 +203,8 @@ describe('stats', () => {
         Code: countUpLambdaFunction,
         FunctionName: 'job0-function1',
         event: { count: 1 },
+        payload: { count: 1 },
+        rawResults: { count: 2 },
         results: { count: 2 },
         state: JobFuncState.Done
       }

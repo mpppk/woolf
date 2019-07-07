@@ -42,23 +42,33 @@ describe('StatManager', () => {
   it('handle job stats', async () => {
     const statManager = new StatManager();
 
-    const dummyEvent = { foo: 'bar' };
-    statManager.updateJobEvent(stats[0].id, dummyEvent);
-    expect(statManager.getJobEventAndResults(0)).toEqual({ event: dummyEvent });
+    const dummyPayload = { foo: 'bar' };
+    statManager.updateJobPayload(stats[0].id, dummyPayload);
+    expect(statManager.getJobEventAndResults(0)).toEqual({ payload: dummyPayload });
     const dummyResults = { foo2: 'bar2' };
     statManager.updateJobResults(stats[0].id, dummyResults);
-    expect(statManager.getJobEventAndResults(0)).toEqual({ event: dummyEvent, results: dummyResults });
+    expect(statManager.getJobEventAndResults(0)).toEqual({ payload: dummyPayload, results: dummyResults });
   });
 
   it('handle func stats', async () => {
     const statManager = new StatManager();
 
     const funcName = 'func1';
-    const dummyEvent = { foo: 'bar' };
+    const dummyPayload = { foo: 'bar' };
+    const dummyEvent = { foo: 'bar', foo2: 'bar2' };
+    statManager.updateFuncPayload(funcName, dummyPayload);
     statManager.updateFuncEvent(funcName, dummyEvent);
-    const dummyResults = { foo2: 'bar2' };
+    const dummyRawResults = { foo3: 'bar3' };
+    const dummyResults = { foo4: 'bar4' };
+    statManager.updateFuncRawResults(funcName, dummyRawResults);
     statManager.updateFuncResults(funcName, dummyResults);
     const funcStat = { FunctionName: funcName } as JobFuncStat;
-    expect(statManager.newFuncStat(funcStat)).toEqual({ ...funcStat, event: dummyEvent, results: dummyResults });
+    expect(statManager.newFuncStat(funcStat)).toEqual({
+      ...funcStat,
+      event: dummyEvent,
+      payload: dummyPayload,
+      rawResults: dummyRawResults,
+      results: dummyResults
+    });
   });
 });

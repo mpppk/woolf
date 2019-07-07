@@ -1,14 +1,16 @@
-import { JobFuncStat } from './job';
+import { IJobInOut, JobFuncStat } from './job';
 import { IWoolfData } from './models';
 
 export class StatManager {
-  private jobStatEventMap = new Map<number, IWoolfData>();
+  private jobStatPayloadMap = new Map<number, IWoolfData>();
   private jobStatResultsMap = new Map<number, IWoolfData | IWoolfData[]>();
   private funcStatEventMap = new Map<string, IWoolfData>();
+  private funcStatPayloadMap = new Map<string, IWoolfData>();
   private funcStatResultsMap = new Map<string, IWoolfData | IWoolfData[]>();
+  private funcStatRawResultsMap = new Map<string, IWoolfData | IWoolfData[]>();
 
-  public updateJobEvent(id: number, event: IWoolfData | IWoolfData[]) {
-    this.jobStatEventMap.set(id, event);
+  public updateJobPayload(id: number, event: IWoolfData | IWoolfData[]) {
+    this.jobStatPayloadMap.set(id, event);
   }
 
   public updateJobResults(id: number, results: IWoolfData | IWoolfData[]) {
@@ -19,19 +21,29 @@ export class StatManager {
     this.funcStatEventMap.set(name, event);
   }
 
+  public updateFuncPayload(name: string, payload: IWoolfData | IWoolfData[]) {
+    this.funcStatPayloadMap.set(name, payload);
+  }
+
   public updateFuncResults(name: string, results: IWoolfData | IWoolfData[]) {
     this.funcStatResultsMap.set(name, results);
   }
 
-  public getJobEventAndResults(id: number): Pick<JobFuncStat, 'event' | 'results'> {
-    const event = this.jobStatEventMap.get(id);
+  public updateFuncRawResults(name: string, rawResults: IWoolfData | IWoolfData[]) {
+    this.funcStatRawResultsMap.set(name, rawResults);
+  }
+
+  public getJobEventAndResults(id: number): Partial<IJobInOut> {
+    const payload = this.jobStatPayloadMap.get(id);
     const results = this.jobStatResultsMap.get(id);
-    return { event, results };
+    return { payload, results };
   }
 
   public newFuncStat(funcStat: JobFuncStat): JobFuncStat {
     const event = this.funcStatEventMap.get(funcStat.FunctionName);
+    const payload = this.funcStatPayloadMap.get(funcStat.FunctionName);
+    const rawResults = this.funcStatRawResultsMap.get(funcStat.FunctionName);
     const results = this.funcStatResultsMap.get(funcStat.FunctionName);
-    return { ...funcStat, event, results };
+    return { ...funcStat, payload, event, rawResults, results };
   }
 }
