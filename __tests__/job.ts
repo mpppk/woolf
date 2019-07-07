@@ -173,7 +173,7 @@ describe('stats', () => {
       ...generateDefaultFuncStat(),
       Code: countUpLambdaFunction,
       Parameters: { count: 1 },
-      event: {},
+      event: { count: 1 },
       payload: {},
       rawResults: { count: 2 },
       results: { count: 2 },
@@ -248,7 +248,12 @@ describe('EventManager', () => {
 });
 
 describe('Job.getFuncStats', () => {
-  const lamool = new Lamool();
+  let lamool = new Lamool();
+
+  beforeEach(async () => {
+    await lamool.terminate(true);
+    lamool = new Lamool();
+  });
 
   afterAll(async () => {
     await lamool.terminate(true);
@@ -266,5 +271,42 @@ describe('Job.getFuncStats', () => {
     expect(jobStat.InputPath).toBe('$');
     expect(jobStat.OutputPath).toBe('$');
     expect(jobStat.Parameters).toEqual(countParameters);
+  });
+
+  it('return correct event property', async () => {
+    const job = new Job(1, lamool);
+    const countParameters = { 'count.$': '$.otherCount', someKey: 1 };
+    await job.addFunc(countUpLambdaFunction, {
+      InputPath: '$.nest',
+      Parameters: countParameters
+    });
+    const result = await job.run({ nest: { otherCount: 0 } });
+    const funcStat = job.getFuncStats()[0];
+    // FIXME
+    expect(funcStat.event).toEqual({ count: 0, otherCount: 0, someKey: 1 });
+    expect(result).toEqual({ count: 1 });
+  });
+
+  it('return correct rawResults and results property with ResultPath', async () => {
+    const job = new Job(1, lamool);
+    await job.addFunc(countUpLambdaFunction, {
+      ResultPath: '$.result'
+    });
+    const result = await job.run({ count: 0 });
+    const funcStat = job.getFuncStats()[0];
+    expect(funcStat.rawResults).toEqual({ count: 1 });
+    expect(result).toEqual({ count: 0, result: { count: 1 } });
+  });
+
+  it('return correct rawResults and results property with OutputPath', async () => {
+    const job = new Job(1, lamool);
+    await job.addFunc(countUpLambdaFunction, {
+      OutputPath: '$.newCount',
+      ResultPath: '$.newCount'
+    });
+    const result = await job.run({ count: 0 });
+    const funcStat = job.getFuncStats()[0];
+    expect(funcStat.rawResults).toEqual({ count: 1 });
+    expect(result).toEqual({ count: 1 });
   });
 });

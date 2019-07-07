@@ -153,7 +153,6 @@ export class Job {
     data: IWoolfData,
     environment: LambdaEnvironment
   ): IWoolfFuncEventContext {
-    this.statManager.updateFuncEvent(funcName, data);
     this.updateFuncState(funcName, JobFuncState.Processing);
     const context: IWoolfFuncEventContext = {
       ...this.getBaseEventContext(),
@@ -168,7 +167,6 @@ export class Job {
   }
 
   private dispatchFinishFuncEvent(context: IWoolfFuncEventContext, result: IWoolfData) {
-    this.statManager.updateFuncResults(context.funcName, result);
     this.updateFuncState(context.funcName, JobFuncState.Done);
     this.eventManager.dispatchFinishFuncEvent({
       ...context,
