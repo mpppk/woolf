@@ -54,7 +54,7 @@
   "dependencies": {
     "aws-sdk": "latest",
     "jsonpath": "^1.0.0",
-    "lamool": "0.0.9",
+    "lamool": "0.0.10",
     "lodash": "^4.17.11",
     "p-iteration": "^1.1.7"
   }
