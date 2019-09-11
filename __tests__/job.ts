@@ -309,3 +309,34 @@ describe('Job.getFuncStats', () => {
     expect(result).toEqual({ count: 1 });
   });
 });
+
+describe('JobFuncState', () => {
+  let lamool = new Lamool();
+
+  beforeEach(async () => {
+    await lamool.terminate(true);
+    lamool = new Lamool();
+  });
+
+  afterAll(async () => {
+    await lamool.terminate(true);
+  });
+
+  it('must be DONE if job has correctly finished the function', async () => {
+    const job = new Job(1, lamool);
+    await job.addFunc(countUpLambdaFunction);
+    await job.run({ count: 0 });
+    const funcStat = job.getFuncStats()[0];
+    expect(funcStat.state).toEqual(JobFuncState.Done);
+  });
+
+  it('must be FAILED if function execution is failed', async () => {
+    const job = new Job(1, lamool);
+    await job.addFunc(() => {
+      throw new Error();
+    });
+    await expect(job.run({})).rejects.toBeTruthy();
+    const funcStat = job.getFuncStats()[0];
+    expect(funcStat.state).toEqual(JobFuncState.Failed);
+  });
+});

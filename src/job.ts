@@ -20,7 +20,8 @@ import { Omit } from './types';
 export enum JobFuncState {
   Processing = 'PROCESSING',
   Done = 'DONE',
-  Ready = 'READY'
+  Ready = 'READY',
+  Failed = 'FAILED'
 }
 
 export interface IJobOption {
@@ -117,7 +118,13 @@ export class Job {
         this.environment = res.environment;
         context = this.dispatchStartFuncEvent(funcName, accData, res.environment);
       };
-      const result = await this.executeFuncWithPaths(funcName, accData, callback.bind(this));
+      let result;
+      try {
+        result = await this.executeFuncWithPaths(funcName, accData, callback.bind(this));
+      } catch (e) {
+        this.dispatchFailFuncEvent(context!, e);
+        throw e; // FIXME throw own error
+      }
       const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
       while (true) {
         if (context !== null) {
@@ -172,6 +179,15 @@ export class Job {
       ...context,
       funcStats: this.getFuncStats(),
       result
+    });
+  }
+
+  private dispatchFailFuncEvent(context: IWoolfFuncEventContext, error: Error) {
+    this.updateFuncState(context.funcName, JobFuncState.Failed);
+    this.eventManager.dispatchFinishFuncEvent({
+      ...context,
+      funcStats: this.getFuncStats(),
+      result: error
     });
   }
 

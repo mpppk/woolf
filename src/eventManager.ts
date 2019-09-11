@@ -1,7 +1,9 @@
 import {
   IWoolfAddFuncEventContext,
   IWoolfBaseJobEventContext,
-  IWoolfEventHandlers, IWoolfFinishJobEventContext, IWoolfFuncEventContext,
+  IWoolfEventHandlers,
+  IWoolfFinishJobEventContext,
+  IWoolfFuncEventContext,
   IWoolfJobEventContext,
   IWoolfWFEventContext,
   WoolfEventHandler
@@ -12,6 +14,7 @@ const emptyWoolfEventHandlers: IWoolfEventHandlers = {
   addFunc: [],
   addNewJob: [],
   change: [],
+  failFunc: [],
   finish: [],
   finishFunc: [],
   finishJob: [],
@@ -23,11 +26,7 @@ const emptyWoolfEventHandlers: IWoolfEventHandlers = {
 type WoolfEventName = keyof IWoolfEventHandlers;
 
 export class EventManager {
-  public static getWFContext(
-    workflowName: string,
-    payload: IWoolfData,
-    result?: IWoolfData
-  ): IWoolfWFEventContext {
+  public static getWFContext(workflowName: string, payload: IWoolfData, result?: IWoolfData): IWoolfWFEventContext {
     return { workflowName, payload, result: result ? result : {} };
   }
   public static getBaseJobContext(workflowName: string, jobName: string): IWoolfBaseJobEventContext {
@@ -87,5 +86,9 @@ export class EventManager {
 
   public dispatchFinishFuncEvent(context: IWoolfFuncEventContext) {
     this.dispatchEvent('finishFunc', context);
+  }
+
+  public dispatchFailFuncEvent(context: IWoolfFuncEventContext) {
+    this.dispatchEvent('failFunc', context);
   }
 }
