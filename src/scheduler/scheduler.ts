@@ -10,7 +10,8 @@ export enum JobState {
   Processing = 'PROCESSING',
   Done = 'DONE',
   Ready = 'READY',
-  Suspend = 'SUSPEND'
+  Suspend = 'SUSPEND',
+  Failed = 'FAILED'
 }
 
 export type JobEnvironment = LambdaEnvironment | 'pending';
@@ -31,6 +32,7 @@ export class Scheduler {
   private graph = new DAG<Job>();
   private doneJobs: Map<number, IWoolfData> = new Map();
   private processingJobIDs: number[] = [];
+  private failedJobIDs: number[] = [];
 
   public addJob(job: Job) {
     this.graph.addNode(job);
@@ -69,6 +71,11 @@ export class Scheduler {
     return _.zip(nextJobs, dataList) as Array<[Job, IWoolfData[]]>;
   }
 
+  public failJob(job: Job) {
+    this.processingJobIDs = this.processingJobIDs.filter(id => id !== job.id);
+    this.failedJobIDs.push(job.id);
+  }
+
   public isReadiedJob(job: Job): boolean {
     if (this.isDoneJob(job)) {
       return false;
@@ -84,7 +91,12 @@ export class Scheduler {
   }
 
   public isSuspendedJob(job: Job): boolean {
-    return !this.isDoneJob(job) && !this.isReadiedJob(job);
+    // FIXME
+    return !this.isDoneJob(job) && !this.isReadiedJob(job) && !this.isFailedJob(job);
+  }
+
+  public isFailedJob(job: Job): boolean {
+    return this.failedJobIDs.includes(job.id);
   }
 
   public getSuspendedJobs(): Job[] {
@@ -114,6 +126,9 @@ export class Scheduler {
       return JobState.Processing;
     }
 
+    if (this.isFailedJob(job)) {
+      return JobState.Failed;
+    }
     if (this.isDoneJob(job)) {
       return JobState.Done;
     }

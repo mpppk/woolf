@@ -62,7 +62,13 @@ export class Woolf {
       this.scheduler.startJob(job);
       const jobContext = EventManager.getJobContext(this.name, job.name, payload);
       this.eventManager.dispatchStartJobEvent(jobContext);
-      const result = await job.run(payload);
+      let result;
+      try {
+        result = await job.run(payload);
+      } catch (e) {
+        this.scheduler.failJob(job);
+        throw e; // FIXME: throw own error type
+      }
       const nextJobAndDataList = this.scheduler.doneJob(job, result);
       this.eventManager.dispatchFinishJobEvent({
         ...jobContext,
