@@ -42,7 +42,7 @@ export type WoolfEventContext =
 
 export type WoolfEventHandler<T> = (type: string, context: T) => void;
 
-export type WoolfFuncEvent = 'addFunc' | 'startFunc' | 'finishFunc';
+export type WoolfFuncEvent = 'addFunc' | 'startFunc' | 'finishFunc' | 'failFunc';
 export type WoolfJobEvent = 'addNewJob' | 'startJob';
 export type WoolfFinishJobEvent = 'finishJob';
 export type WoolfWFEvent = 'start' | 'finish' | 'change';
