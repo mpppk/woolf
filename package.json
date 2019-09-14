@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "build": "tsc",
-    "clean": "rimraf src/**/*.js src/**/*.js.map",
+    "clean": "rimraf src/**/*.js src/**/*.js.map src/**/*.d.ts",
     "watch": "tsc --watch",
     "pretest": "npm run clean",
     "test": "npm run clean && jest --runInBand --forceExit",

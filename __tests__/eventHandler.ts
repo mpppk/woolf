@@ -213,4 +213,35 @@ describe('woolf', () => {
     expect(finishFuncEventIsCalled).toBeTruthy();
     expect(startFuncEventIsCalled).toBeTruthy();
   });
+
+  it('handle failed func events', async () => {
+    let failFuncEventIsCalled = false;
+    const jobName = 'test-job';
+    const funcName = 'test-func';
+    const initialPayload = { count: 0 };
+    const eventHandlers: Partial<IWoolfEventHandlers> = {
+      failFunc: [
+        (eventType, context) => {
+          expect(eventType).toBe('failFunc');
+          expect(context.jobName).toBe(jobName);
+          expect(context.workflowName).toBe(workflowName);
+          expect(context.funcName).toBe(`${jobName}-${funcName}`);
+          expect(context.payload).toEqual(initialPayload);
+          expect(context.environment).toEqual('local');
+          failFuncEventIsCalled = true;
+        }
+      ]
+    };
+    woolf.updateEventHandlers(eventHandlers);
+    const job = woolf.newJob({ name: jobName });
+    await job.addFunc<ICountPayload>(
+      () => {
+        throw new Error();
+      },
+      { FunctionName: funcName }
+    ); // tslint:disable-line
+
+    await expect(woolf.run(initialPayload)).rejects.toBeTruthy();
+    expect(failFuncEventIsCalled).toBeTruthy();
+  });
 });

@@ -184,7 +184,7 @@ export class Job {
 
   private dispatchFailFuncEvent(context: IWoolfFuncEventContext, error: Error) {
     this.updateFuncState(context.funcName, JobFuncState.Failed);
-    this.eventManager.dispatchFinishFuncEvent({
+    this.eventManager.dispatchFailFuncEvent({
       ...context,
       funcStats: this.getFuncStats(),
       result: error
