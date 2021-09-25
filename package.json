@@ -32,7 +32,7 @@
   "author": "mpppk",
   "license": "MIT",
   "devDependencies": {
-    "@types/jest": "25.1.0",
+    "@types/jest": "25.2.3",
     "@types/jsonpath": "0.2.0",
     "@types/jszip": "3.4.0",
     "@types/lodash": "4.14.174",
