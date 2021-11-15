@@ -35,7 +35,7 @@
     "@types/jest": "25.2.3",
     "@types/jsonpath": "0.2.0",
     "@types/jszip": "3.4.0",
-    "@types/lodash": "4.14.176",
+    "@types/lodash": "4.14.177",
     "@types/node": "10.17.60",
     "@types/workerpool": "5.0.2",
     "codecov": "3.8.3",
