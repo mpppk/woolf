@@ -48,7 +48,7 @@
     "ts-loader": "8.4.0",
     "tslint": "5.20.1",
     "tslint-config-prettier": "1.18.0",
-    "typedoc": "0.23.27",
+    "typedoc": "0.24.1",
     "typescript": "3.9.10"
   },
   "dependencies": {
