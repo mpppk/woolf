@@ -33,7 +33,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "25.2.3",
-    "@types/jsonpath": "0.2.0",
+    "@types/jsonpath": "0.2.4",
     "@types/jszip": "3.4.0",
     "@types/lodash": "4.14.192",
     "@types/node": "10.17.60",
